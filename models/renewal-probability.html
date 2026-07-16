@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model Lab · Renewal Probability (Logistic Regression)</title>
+<style>
+:root{--accent:#ff5a36;--text:#17130f;--muted:#7a736c;--line:#eee4df;--panel2:#fdf5f2;--green:#148a46;--red:#c0182f}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#fff;color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.5}
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:14px}
+.mark{width:24px}
+.brand h1{font-size:16px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.brand p{font-size:11px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-top:2px}
+a.back{font-size:12px;color:var(--accent);text-decoration:none;font-weight:600}
+main{max-width:1200px;margin:0 auto;padding:28px 32px 60px}
+.intro{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:20px;font-size:13.5px;line-height:1.6}
+.intro b{color:var(--accent)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:4px;font-weight:700}
+.card .sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;padding:7px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid rgba(0,0,0,.05)}
+td.num{font-variant-numeric:tabular-nums}
+.pos{color:var(--green);font-weight:600}.neg{color:var(--red);font-weight:600}
+.slider-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.slider-row label{width:190px;font-size:12.5px}
+.slider-row input{flex:1;accent-color:var(--accent)}
+.slider-row .val{width:70px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.gauge{text-align:center;padding:10px 0 4px}
+.gauge .p{font-size:52px;font-weight:800;letter-spacing:-.02em}
+.gauge .l{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
+.contrib{margin-top:14px}
+.crow{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12px}
+.crow .cl{width:190px;color:var(--muted)}
+.crow .cbar-wrap{flex:1;position:relative;height:14px}
+.crow .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)}
+.crow .cbar{position:absolute;top:2px;height:10px;border-radius:3px}
+.stats{display:flex;gap:12px;margin-bottom:14px}
+.stat{flex:1;border:1px solid var(--line);border-radius:10px;padding:12px;text-align:center}
+.stat .v{font-size:22px;font-weight:800}
+.stat .l{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-top:2px}
+pre{background:#1c1713;color:#f5ede8;border-radius:10px;padding:16px;font-size:12px;overflow-x:auto;line-height:1.55;margin-top:10px}
+.note{font-size:12px;color:var(--muted);border-top:1px solid var(--line);margin-top:14px;padding-top:10px;line-height:1.55}
+.note b{color:var(--accent)}
+button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:12.5px;font-weight:700;cursor:pointer}
+button:hover{opacity:.88}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 620 1000" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#FF5A36" stroke-width="58" style="width:100%;height:auto;display:block"><rect x="216" y="29" width="375" height="156"/><rect x="29" y="216" width="562" height="156"/><rect x="29" y="431" width="562" height="156"/><rect x="87" y="616" width="126" height="355"/></svg></div>
+    <div><h1>Model Lab 01</h1><p>Renewal Probability · Logistic Regression</p></div>
+  </div>
+  <a class="back" href="../index.html">← All demos</a>
+</header>
+<main>
+  <div class="intro">
+    <b>What you're looking at:</b> a real logistic regression, trained in your browser the moment this page loaded. We generate 4,000 synthetic leases with known ground-truth behaviour, hold out 20% the model never sees, train on the rest by gradient descent, and report accuracy on the held-out set. In production the only change is the input: real lease outcomes from Yardi instead of synthetic ones. <b>View source on this page — the entire model is ~60 lines of commented JavaScript.</b>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Learned Weights — the model's "scorecard"</h2>
+        <div class="sub">Positive pushes toward renewal, negative pushes toward leaving. Compare what the model learned against the hidden truth it had to discover.</div>
+        <table id="wtable">
+          <thead><tr><th>Feature</th><th>True (hidden)</th><th>Learned</th><th>Reads as…</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="note"><b>How training works:</b> the model starts with all weights at zero and repeats 400 times: predict every lease, compare against what actually happened, nudge each weight in the direction that reduces the total error (gradient descent). The learned column converging to the true column is the proof it works — with real data there is no "true" column; the learned weights <i>are</i> the discovery.</div>
+      </div>
+      <div class="card">
+        <h2>The Entire Model</h2>
+        <div class="sub">This is the "AI" — a weighted sum squashed to a probability</div>
+<pre>// score: weighted sum of resident features
+z = b0 + w1·tenure + w2·rentIncrease%
+     + w3·tickets90d + w4·slaBreaches
+     + w5·sentiment + w6·amenityUses
+     + w7·isStudent
+
+// sigmoid: squash score to 0–100%
+P(renew) = 1 / (1 + e^(−z))
+
+// training: for 400 epochs
+//   error = P(renew) − actualOutcome
+//   each weight -= learningRate · error · feature</pre>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>Compose a Resident</h2>
+        <div class="sub">Drag the sliders — the trained model rescores live</div>
+        <div class="slider-row"><label>Tenure (years)</label><input type="range" id="s_ten" min="0" max="8" step="0.5" value="3"><span class="val" id="v_ten">3.0</span></div>
+        <div class="slider-row"><label>Rent increase offered (%)</label><input type="range" id="s_inc" min="0" max="10" step="0.5" value="3"><span class="val" id="v_inc">3.0%</span></div>
+        <div class="slider-row"><label>Tickets, last 90 days</label><input type="range" id="s_tik" min="0" max="8" step="1" value="1"><span class="val" id="v_tik">1</span></div>
+        <div class="slider-row"><label>SLA breaches on their tickets</label><input type="range" id="s_sla" min="0" max="4" step="1" value="0"><span class="val" id="v_sla">0</span></div>
+        <div class="slider-row"><label>Sentiment (−1 to +1)</label><input type="range" id="s_sen" min="-1" max="1" step="0.1" value="0.3"><span class="val" id="v_sen">+0.3</span></div>
+        <div class="slider-row"><label>Amenity uses / month</label><input type="range" id="s_amn" min="0" max="30" step="1" value="8"><span class="val" id="v_amn">8</span></div>
+        <div class="slider-row"><label>Student lease</label><input type="range" id="s_stu" min="0" max="1" step="1" value="0"><span class="val" id="v_stu">No</span></div>
+        <div class="gauge"><div class="p" id="prob">—</div><div class="l">Modeled renewal probability</div></div>
+        <div class="contrib" id="contrib"></div>
+        <div class="note"><b>Reading the bars:</b> each bar is that feature's push on this resident's score — right of the line raises renewal odds, left lowers them. This is the exact explanation a PM would see next to every resident in the Service Recovery Workbench.</div>
+      </div>
+      <div class="card">
+        <h2>Retrain</h2>
+        <div class="sub">New random dataset, fresh training run — watch the learned weights land near the truth every time</div>
+        <button onclick="run()">Regenerate data & retrain</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ============================================================
+// 1. SYNTHETIC DATA GENERATOR (visible by design — no real data)
+// ============================================================
+// Hidden "truth": how synthetic residents actually behave.
+const TRUE_W = {b0:0.4, tenure:0.35, inc:-0.22, tickets:-0.15, sla:-0.55, sent:1.3, amenity:0.05, student:-0.7};
+const FEATS=[
+ {k:'tenure', name:'Tenure (yrs)', desc:'Longer tenure → stickier'},
+ {k:'inc', name:'Rent increase %', desc:'Bigger ask → more churn'},
+ {k:'tickets', name:'Tickets / 90d', desc:'Friction, mild effect'},
+ {k:'sla', name:'SLA breaches', desc:'Broken promises hurt most'},
+ {k:'sent', name:'Sentiment score', desc:'Strongest single signal'},
+ {k:'amenity', name:'Amenity uses / mo', desc:'Engagement → belonging'},
+ {k:'student', name:'Student lease', desc:'Graduates move on'}
+];
+function rnd(a,b){return a+Math.random()*(b-a)}
+function genLease(){
+ const x={tenure:rnd(0,8), inc:rnd(0,10), tickets:Math.floor(rnd(0,8)), sla:Math.random()<.75?0:Math.floor(rnd(1,4)), sent:rnd(-1,1), amenity:Math.floor(rnd(0,30)), student:Math.random()<.18?1:0};
+ const z=TRUE_W.b0+TRUE_W.tenure*x.tenure+TRUE_W.inc*x.inc+TRUE_W.tickets*x.tickets+TRUE_W.sla*x.sla+TRUE_W.sent*x.sent+TRUE_W.amenity*x.amenity+TRUE_W.student*x.student;
+ const p=1/(1+Math.exp(-z));
+ x.y=Math.random()<p?1:0;               // sample the actual outcome
+ return x;
+}
+
+// ============================================================
+// 2. THE MODEL — logistic regression via gradient descent
+// ============================================================
+const KEYS=['tenure','inc','tickets','sla','sent','amenity','student'];
+let W, MEANS, SDS;                        // learned weights + normalization
+function standardize(data){               // z-score features so one learning rate fits all
+ MEANS={};SDS={};
+ KEYS.forEach(k=>{const v=data.map(d=>d[k]);const m=v.reduce((a,b)=>a+b)/v.length;
+  const sd=Math.sqrt(v.reduce((a,b)=>a+(b-m)**2,0)/v.length)||1;MEANS[k]=m;SDS[k]=sd;});
+}
+function xvec(d){return KEYS.map(k=>(d[k]-MEANS[k])/SDS[k])}
+function sigmoid(z){return 1/(1+Math.exp(-z))}
+function predict(d){let z=W[0];xvec(d).forEach((v,i)=>z+=W[i+1]*v);return sigmoid(z)}
+function train(data,epochs=400,lr=0.05){
+ W=new Array(KEYS.length+1).fill(0);
+ for(let e=0;e<epochs;e++){
+  const g=new Array(W.length).fill(0);
+  data.forEach(d=>{
+   const err=predict(d)-d.y;              // prediction − reality
+   g[0]+=err; xvec(d).forEach((v,i)=>g[i+1]+=err*v);
+  });
+  W=W.map((w,i)=>w-lr*g[i]/data.length);  // nudge weights downhill
+ }
+}
+function auc(data){                        // ranking quality: P(risky scored below safe)
+ const pos=data.filter(d=>d.y===1).map(predict), neg=data.filter(d=>d.y===0).map(predict);
+ let c=0,n=0;
+ for(let i=0;i<Math.min(pos.length,2000);i++)for(let j=0;j<Math.min(neg.length,2000);j++){n++;if(pos[i]>neg[j])c++;else if(pos[i]===neg[j])c+=.5;}
+ return c/n;
+}
+
+// ============================================================
+// 3. TRAIN + RENDER
+// ============================================================
+let TESTSET;
+function run(){
+ const data=Array.from({length:4000},genLease);
+ const cut=Math.floor(data.length*0.8);
+ const trainSet=data.slice(0,cut); TESTSET=data.slice(cut);
+ standardize(trainSet); train(trainSet);
+ const acc=TESTSET.filter(d=>(predict(d)>0.5?1:0)===d.y).length/TESTSET.length;
+ const base=TESTSET.filter(d=>d.y===1).length/TESTSET.length;
+ document.getElementById('stats').innerHTML=`
+  <div class="stat"><div class="v">4,000</div><div class="l">Synthetic leases</div></div>
+  <div class="stat"><div class="v">${(acc*100).toFixed(1)}%</div><div class="l">Held-out accuracy</div></div>
+  <div class="stat"><div class="v">${auc(TESTSET).toFixed(3)}</div><div class="l">AUC (0.5 = coin flip)</div></div>
+  <div class="stat"><div class="v">${(base*100).toFixed(0)}%</div><div class="l">Base renewal rate</div></div>`;
+ // weights table: convert standardized weights back to per-unit scale for comparison
+ document.querySelector('#wtable tbody').innerHTML=FEATS.map((f,i)=>{
+  const learned=W[i+1]/SDS[f.k];
+  const truth=TRUE_W[f.k];
+  const cls=learned>=0?'pos':'neg';
+  return `<tr><td>${f.name}</td><td class="num">${truth>=0?'+':''}${truth.toFixed(2)}</td><td class="num ${cls}">${learned>=0?'+':''}${learned.toFixed(2)}</td><td style="font-size:11.5px;color:var(--muted)">${f.desc}</td></tr>`;
+ }).join('');
+ score();
+}
+function getResident(){
+ return {tenure:+s_ten.value,inc:+s_inc.value,tickets:+s_tik.value,sla:+s_sla.value,sent:+s_sen.value,amenity:+s_amn.value,student:+s_stu.value};
+}
+function score(){
+ const d=getResident();
+ v_ten.textContent=d.tenure.toFixed(1); v_inc.textContent=d.inc.toFixed(1)+'%';
+ v_tik.textContent=d.tickets; v_sla.textContent=d.sla;
+ v_sen.textContent=(d.sent>=0?'+':'')+d.sent.toFixed(1); v_amn.textContent=d.amenity;
+ v_stu.textContent=d.student?'Yes':'No';
+ const p=predict(d);
+ const el=document.getElementById('prob');
+ el.textContent=(p*100).toFixed(0)+'%';
+ el.style.color=p>0.7?'var(--green)':p>0.45?'#a86a00':'var(--red)';
+ // per-feature contribution to the score (weight × standardized value)
+ const xs=xvec(d);
+ const contribs=FEATS.map((f,i)=>({name:f.name,c:W[i+1]*xs[i]}));
+ const max=Math.max(...contribs.map(c=>Math.abs(c.c)),0.1);
+ document.getElementById('contrib').innerHTML=contribs.map(c=>{
+  const w=Math.abs(c.c)/max*48;
+  return `<div class="crow"><div class="cl">${c.name}</div><div class="cbar-wrap"><div class="mid"></div><div class="cbar" style="${c.c>=0?`left:50%;`:`left:${50-w}%;`}width:${w}%;background:${c.c>=0?'rgba(20,138,70,.65)':'rgba(192,24,47,.6)'}"></div></div></div>`;
+ }).join('');
+}
+['s_ten','s_inc','s_tik','s_sla','s_sen','s_amn','s_stu'].forEach(id=>document.getElementById(id).addEventListener('input',score));
+run();
+</script>
+</body>
+</html>

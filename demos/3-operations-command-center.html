@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fitzrovia · Operations Command Center</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#ffffff; --panel:#ffffff; --panel2:#fdf5f2; --line:#eee4df;
+  --gold:#ff5a36; --text:#17130f; --muted:#7a736c;
+  --green:#148a46; --red:#c0182f; --amber:#a86a00; --blue:#135fc2;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:14px}
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);z-index:50}
+.brand{display:flex;align-items:center;gap:14px}
+.brand .mark{width:24px;display:flex;align-items:center}
+.brand h1{font-size:17px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.brand p{font-size:11px;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;margin-top:2px}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.demo-tag{font-size:10px;color:var(--muted);border:1px solid var(--line);padding:4px 10px;border-radius:20px;letter-spacing:.1em}
+.live{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--green)}
+.live .dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+main{padding:24px 32px;max-width:1500px;margin:0 auto}
+.alerts{display:flex;gap:10px;margin-bottom:18px;overflow-x:auto;padding-bottom:4px}
+.alert{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:10px;font-size:12.5px;border:1px solid var(--line);background:var(--panel);cursor:default}
+.alert .ic{font-size:14px}
+.alert.warn{border-color:rgba(168,106,0,.4)}
+.alert.crit{border-color:rgba(192,24,47,.45)}
+.alert.good{border-color:rgba(20,138,70,.35)}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),transparent)}
+.kpi .label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px}
+.kpi .value{font-size:27px;font-family:inherit;font-weight:700}
+.kpi .delta{font-size:11.5px;margin-top:5px}
+.up{color:var(--green)}.down{color:var(--red)}.flat{color:var(--amber)}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:1.55fr 1fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
+.card{background:var(--panel);border:1px solid var(--line);box-shadow:0 1px 3px rgba(0,0,0,.04);border-radius:12px;padding:20px;margin-bottom:14px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);margin-bottom:4px;font-weight:600}
+.card .sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.09em;padding:8px 9px;border-bottom:1px solid var(--line);font-weight:600}
+td{padding:10px 9px;border-bottom:1px solid rgba(0,0,0,.05)}
+tr:hover td{background:rgba(255,90,54,.04)}
+.bname{font-weight:600}
+.bsub{font-size:11px;color:var(--muted)}
+.occ-bar{width:76px;height:6px;border-radius:3px;background:var(--line);display:inline-block;vertical-align:middle;margin-right:8px;overflow:hidden}
+.occ-bar div{height:100%;border-radius:3px}
+.pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.pill.ok{background:rgba(20,138,70,.12);color:var(--green)}
+.pill.watch{background:rgba(168,106,0,.12);color:var(--amber)}
+.pill.crit{background:rgba(192,24,47,.14);color:var(--red)}
+.funnel-step{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.funnel-step .fl{width:130px;font-size:12px;color:var(--muted)}
+.funnel-step .fbar{height:26px;border-radius:5px;background:linear-gradient(90deg,rgba(255,90,54,.75),rgba(255,90,54,.35));display:flex;align-items:center;padding-left:10px;font-size:12px;font-weight:600;color:#ffffff;min-width:46px}
+.staff-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.05);font-size:13px}
+.staff-row:last-child{border:none}
+.staff-row .r{display:flex;gap:10px;align-items:center}
+.ai-note{background:linear-gradient(135deg,rgba(255,90,54,.08),rgba(255,90,54,.02));border:1px solid rgba(255,90,54,.25);border-radius:12px;padding:16px 20px;margin-bottom:14px;font-size:13px;line-height:1.55}
+.ai-note b{color:var(--gold)}
+.ai-note .hdr{display:flex;gap:8px;margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);font-weight:600}
+canvas{max-height:240px}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;letter-spacing:.08em}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.g2,.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 620 1000" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#FF5A36" stroke-width="58" style="width:100%;height:auto;display:block"><rect x="216" y="29" width="375" height="156"/><rect x="29" y="216" width="562" height="156"/><rect x="29" y="431" width="562" height="156"/><rect x="87" y="616" width="126" height="355"/></svg></div>
+    <div>
+      <h1>Fitzrovia</h1>
+      <p>Operations Command Center</p>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span class="live"><span class="dot"></span>LIVE · Updated 8:00 AM ET</span>
+    <span class="demo-tag">DEMO · SYNTHETIC DATA</span>
+  </div>
+</header>
+<main>
+  <div class="alerts">
+    <div class="alert crit"><span class="ic">⚠</span>Parker: 38 leases expire in 90d with renewal intent tracking 9pts below target</div>
+    <div class="alert warn"><span class="ic">◔</span>Maddox Cabbagetown: NOI −3.1% vs budget (laundry vendor credits + utilities)</div>
+    <div class="alert warn"><span class="ic">✎</span>Sloane: 2 concierge shifts unfilled this weekend</div>
+    <div class="alert good"><span class="ic">↗</span>Elm-Ledbury: renewal rate 78% — new portfolio record</div>
+    <div class="alert good"><span class="ic">↗</span>Loxley Mille Carré: lease-up 94% — 6 months ahead of pro forma</div>
+  </div>
+
+  <div class="ai-note">
+    <div class="hdr">✦ AI Daily Operations Brief — Tuesday, July 7</div>
+    Portfolio occupancy holds at <b>96.1%</b> with NOI tracking <b>+1.8% vs budget</b> YTD. The single biggest lever this quarter is <b>Parker renewals</b>: 38 expirations in 90 days against soft intent — each point of renewal recovered is worth ≈<b>$41k annualized</b> (turn cost + vacancy + re-lease spread). Suggested play: pair the elevator-timeline announcement with a targeted renewal incentive for floors 15+ (modeled +11pt intent lift). Staffing: weekend concierge gap at Sloane can be covered by cross-trained staff from Elm-Ledbury (2 volunteers flagged in scheduling system).
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="label">Occupancy</div><div class="value">96.1%</div><div class="delta up">+0.4 vs June</div></div>
+    <div class="kpi"><div class="label">Leased (incl. future)</div><div class="value">97.3%</div><div class="delta up">+0.6 vs June</div></div>
+    <div class="kpi"><div class="label">Renewal Rate (T90)</div><div class="value">71%</div><div class="delta flat">Target 73%</div></div>
+    <div class="kpi"><div class="label">Blended Avg Rent</div><div class="value">$2,741</div><div class="delta up">+3.2% YoY</div></div>
+    <div class="kpi"><div class="label">NOI vs Budget YTD</div><div class="value">+1.8%</div><div class="delta up">$1.24M favourable</div></div>
+    <div class="kpi"><div class="label">Staffing Coverage</div><div class="value">97%</div><div class="delta flat">4 open shifts / 7d</div></div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h2>NOI — Budget vs Actual</h2>
+      <div class="sub">Portfolio monthly NOI ($M) · FY2026</div>
+      <canvas id="noiChart"></canvas>
+    </div>
+    <div class="card">
+      <h2>Occupancy & Leased Trend</h2>
+      <div class="sub">Portfolio · trailing 12 months</div>
+      <canvas id="occChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Community Operations Grid</h2>
+    <div class="sub">One row per community · sorted by attention needed</div>
+    <table>
+      <thead><tr><th>Community</th><th>Occupancy</th><th>Avg Rent</th><th>Expiring 90d</th><th>Renewal Intent</th><th>NOI vs Budget</th><th>Open WOs</th><th>Staffing</th><th>Status</th></tr></thead>
+      <tbody id="grid"></tbody>
+    </table>
+  </div>
+
+  <div class="grid g3">
+    <div class="card">
+      <h2>Renewal Pipeline — Next 90 Days</h2>
+      <div class="sub">Portfolio-wide funnel</div>
+      <div id="funnel"></div>
+      <div class="bsub" style="margin-top:10px;line-height:1.5">AI note: 41 "undecided" residents have positive sentiment + no rent-burden signals — highest-yield outreach cohort. Personalized renewal drafts ready for PM review.</div>
+    </div>
+    <div class="card">
+      <h2>Leasing Velocity</h2>
+      <div class="sub">Weekly signed leases · last 8 weeks</div>
+      <canvas id="velChart"></canvas>
+    </div>
+    <div class="card">
+      <h2>Staffing Board — Next 7 Days</h2>
+      <div class="sub">Open shifts & coverage plan</div>
+      <div id="staff"></div>
+    </div>
+  </div>
+</main>
+<footer>Prepared as a concept demonstration for Fitzrovia · All operational data is synthetic · Built with AI-assisted development</footer>
+
+<script>
+const GRID=[
+ {name:'Parker',loc:'Midtown, Toronto · 316 units',occ:93.4,rent:'$2,588',exp:38,intent:58,intentC:'crit',noi:'−1.9%',noiC:'down',wo:31,staff:'Full',status:'crit',statusL:'Action Needed'},
+ {name:'Maddox Cabbagetown',loc:'Cabbagetown South · 180 units',occ:95.0,rent:'$2,110',exp:14,intent:64,intentC:'watch',noi:'−3.1%',noiC:'down',wo:18,staff:'Full',status:'watch',statusL:'Watch'},
+ {name:'Sloane',loc:'Yorkdale, North York · 466 units',occ:96.8,rent:'$2,494',exp:29,intent:72,intentC:'ok',noi:'+2.4%',noiC:'up',wo:22,staff:'2 open',status:'watch',statusL:'Watch'},
+ {name:'Waverley',loc:'College & Spadina · 166 units',occ:98.2,rent:'$3,412',exp:44,intent:69,intentC:'watch',noi:'+3.0%',noiC:'up',wo:9,staff:'Full',status:'watch',statusL:'Seasonal Turn'},
+ {name:'Marlow',loc:'Bloordale Village · 240 units',occ:95.8,rent:'$2,835',exp:16,intent:73,intentC:'ok',noi:'+1.2%',noiC:'up',wo:14,staff:'Full',status:'ok',statusL:'Healthy'},
+ {name:'Maddox Tyndall',loc:'Liberty Village · 214 units',occ:96.3,rent:'$2,187',exp:12,intent:70,intentC:'ok',noi:'+0.8%',noiC:'up',wo:16,staff:'1 open',status:'ok',statusL:'Healthy'},
+ {name:'Elm-Ledbury',loc:'Queen & Church · 542 units',occ:97.6,rent:'$2,872',exp:31,intent:78,intentC:'ok',noi:'+3.6%',noiC:'up',wo:19,staff:'Full',status:'ok',statusL:'Healthy'},
+ {name:'Loxley Mille Carré',loc:'Golden Square Mile, MTL · 322 units',occ:94.1,rent:'$2,046',exp:8,intent:75,intentC:'ok',noi:'+4.2%',noiC:'up',wo:11,staff:'1 open',status:'ok',statusL:'Lease-Up'}
+];
+document.getElementById('grid').innerHTML=GRID.map(b=>{
+ const oc=b.occ>=96?'var(--green)':b.occ>=94?'var(--amber)':'var(--red)';
+ return `<tr>
+  <td><div class="bname">${b.name}</div><div class="bsub">${b.loc}</div></td>
+  <td><span class="occ-bar"><div style="width:${b.occ}%;background:${oc}"></div></span>${b.occ}%</td>
+  <td>${b.rent}</td><td>${b.exp}</td>
+  <td><span class="pill ${b.intentC}">${b.intent}%</span></td>
+  <td class="${b.noiC}" style="font-weight:600">${b.noi}</td>
+  <td>${b.wo}</td><td>${b.staff}</td>
+  <td><span class="pill ${b.status}">${b.statusL}</span></td></tr>`;
+}).join('');
+
+const FUNNEL=[
+ {l:'Expiring in 90d',v:192,w:100},{l:'Contacted',v:171,w:89},{l:'Intent: Renew',v:118,w:61},
+ {l:'Undecided',v:41,w:21},{l:'Intent: Leave',v:12,w:6},{l:'Renewed (signed)',v:96,w:50}
+];
+document.getElementById('funnel').innerHTML=FUNNEL.map(f=>
+ `<div class="funnel-step"><div class="fl">${f.l}</div><div class="fbar" style="width:${f.w}%">${f.v}</div></div>`).join('');
+
+const STAFF=[
+ {r:'Concierge · Sloane',s:'Sat 3–11pm',plan:'crit',planL:'Unfilled',fix:'2 Elm-Ledbury volunteers flagged'},
+ {r:'Concierge · Sloane',s:'Sun 3–11pm',plan:'crit',planL:'Unfilled',fix:'Same coverage pair available'},
+ {r:'Maint. Tech · Maddox Tyndall',s:'Wed 8–4',plan:'watch',planL:'Pending',fix:'Float tech J. Rivera offered shift'},
+ {r:'Leasing · Loxley Mille Carré',s:'Thu 10–6',plan:'watch',planL:'Pending',fix:'Bilingual req — 1 candidate confirmed by 5pm'},
+ {r:'Cleaning · Waverley (turn week)',s:'Aug 28–31',plan:'ok',planL:'Planned',fix:'Vendor surge crew booked — 44 turns scheduled'}
+];
+document.getElementById('staff').innerHTML=STAFF.map(s=>
+ `<div class="staff-row"><div><div style="font-weight:600">${s.r}</div><div class="bsub">${s.s} · ${s.fix}</div></div>
+  <span class="pill ${s.plan}">${s.planL}</span></div>`).join('');
+
+const gridC='rgba(0,0,0,.06)',tickC='#7a736c';
+const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+new Chart(document.getElementById('noiChart'),{type:'bar',data:{labels:M,datasets:[
+ {label:'Budget',data:[5.9,5.9,6.0,6.0,6.1,6.1,6.2,6.2,6.2,6.3,6.3,6.3],backgroundColor:'rgba(122,115,108,.35)',borderRadius:3},
+ {label:'Actual',data:[6.0,6.1,6.05,6.15,6.2,6.25,6.3,null,null,null,null,null],backgroundColor:'#ff5a36',borderRadius:3},
+ {label:'Forecast',data:[null,null,null,null,null,null,null,6.32,6.3,6.38,6.4,6.42],backgroundColor:'rgba(255,90,54,.35)',borderRadius:3}]},
+ options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tickC,boxWidth:12,font:{size:11}}}},
+ scales:{x:{ticks:{color:tickC},grid:{display:false}},y:{min:5.4,ticks:{color:tickC,callback:v=>'$'+v+'M'},grid:{color:gridC}}}}});
+new Chart(document.getElementById('occChart'),{type:'line',data:{labels:['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul'],datasets:[
+ {label:'Occupied',data:[94.8,95.0,95.2,95.1,95.3,95.4,95.6,95.7,95.8,95.9,95.7,96.1],borderColor:'#ff5a36',backgroundColor:'rgba(255,90,54,.08)',fill:true,tension:.35,borderWidth:2.5,pointRadius:0},
+ {label:'Leased',data:[95.9,96.1,96.2,96.2,96.4,96.5,96.6,96.8,96.9,97.0,96.7,97.3],borderColor:'#135fc2',tension:.35,borderWidth:1.5,borderDash:[4,3],pointRadius:0}]},
+ options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tickC,boxWidth:12,font:{size:11}}}},
+ scales:{x:{ticks:{color:tickC},grid:{color:gridC}},y:{min:93,max:99,ticks:{color:tickC,callback:v=>v+'%'},grid:{color:gridC}}}}});
+new Chart(document.getElementById('velChart'),{type:'bar',data:{labels:['W-8','W-7','W-6','W-5','W-4','W-3','W-2','This wk'],datasets:[
+ {label:'New leases signed',data:[18,22,19,25,28,24,31,27],backgroundColor:'#ff5a36',borderRadius:4},
+ {label:'Renewals signed',data:[11,9,14,12,15,13,17,14],backgroundColor:'rgba(19,95,194,.7)',borderRadius:4}]},
+ options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tickC,boxWidth:12,font:{size:11}}}},
+ scales:{x:{ticks:{color:tickC},grid:{display:false}},y:{ticks:{color:tickC},grid:{color:gridC}}}}});
+</script>
+</body>
+</html>

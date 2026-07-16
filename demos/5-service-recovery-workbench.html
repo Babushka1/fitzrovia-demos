@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fitzrovia · Service Recovery Workbench</title>
+<style>
+:root{
+  --bg:#ffffff; --panel:#ffffff; --panel2:#fdf5f2; --line:#eee4df;
+  --gold:#ff5a36; --text:#17130f; --muted:#7a736c;
+  --green:#148a46; --red:#c0182f; --amber:#a86a00; --blue:#135fc2;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:14px}
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);z-index:50}
+.brand{display:flex;align-items:center;gap:14px}
+.brand .mark{width:24px;display:flex;align-items:center}
+.brand h1{font-size:17px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.brand p{font-size:11px;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;margin-top:2px}
+.demo-tag{font-size:10px;color:var(--muted);border:1px solid var(--line);padding:4px 10px;border-radius:20px;letter-spacing:.1em}
+main{padding:24px 32px;max-width:1500px;margin:0 auto}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),transparent)}
+.kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.kpi .value{font-size:30px;font-family:inherit;font-weight:700}
+.kpi .delta{font-size:12px;margin-top:6px}
+.up{color:var(--green)}.down{color:var(--red)}.flat{color:var(--amber)}
+.layout{display:grid;grid-template-columns:390px 1fr;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);box-shadow:0 1px 3px rgba(0,0,0,.04);border-radius:12px;padding:20px;margin-bottom:14px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);margin-bottom:4px;font-weight:600}
+.card .sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+.case{padding:13px 14px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;background:var(--panel2);cursor:pointer;transition:border-color .15s}
+.case:hover{border-color:var(--gold)}
+.case.active{border-color:var(--gold);background:rgba(255,90,54,.07)}
+.case .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.case .who{font-weight:600;font-size:13px}
+.case .sev{font-family:inherit;font-weight:700;font-size:16px}
+.case .line2{font-size:11.5px;color:var(--muted)}
+.stage{display:inline-block;font-size:10px;padding:2px 9px;border-radius:12px;font-weight:700;letter-spacing:.05em;margin-top:6px}
+.st-detected{background:rgba(192,24,47,.15);color:var(--red)}
+.st-triaged{background:rgba(168,106,0,.13);color:var(--amber)}
+.st-approved{background:rgba(19,95,194,.13);color:var(--blue)}
+.st-executed{background:rgba(255,90,54,.15);color:var(--gold)}
+.st-followup{background:rgba(20,138,70,.1);color:var(--green)}
+.st-recovered{background:rgba(20,138,70,.18);color:var(--green)}
+.pipeline{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.pipe-step{flex:1;min-width:100px;text-align:center;padding:9px 4px;border:1px solid var(--line);border-radius:8px;font-size:10.5px;color:var(--muted);background:var(--panel2)}
+.pipe-step b{display:block;font-family:inherit;font-weight:700;font-size:18px;color:var(--text);margin-bottom:2px}
+.detail-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.detail-head h3{font-size:17px;font-family:inherit;font-weight:700}
+.detail-head .m{font-size:12px;color:var(--muted);margin-top:3px}
+.scorebox{text-align:right}
+.scorebox .n{font-family:inherit;font-weight:700;font-size:32px}
+.scorebox .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.factors{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.factor{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
+.factor .fl{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.factor .fv{font-size:13px;font-weight:600}
+.timeline{position:relative;padding-left:22px;margin-bottom:6px}
+.timeline::before{content:'';position:absolute;left:6px;top:6px;bottom:6px;width:1.5px;background:var(--line)}
+.tl-item{position:relative;padding:0 0 14px 0}
+.tl-item::before{content:'';position:absolute;left:-20px;top:4px;width:9px;height:9px;border-radius:50%;background:var(--panel);border:2px solid var(--muted)}
+.tl-item.neg::before{border-color:var(--red)}
+.tl-item.pos::before{border-color:var(--green)}
+.tl-item.act::before{border-color:var(--gold);background:var(--gold)}
+.tl-item .d{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.tl-item .t{font-size:13px;margin-top:2px;line-height:1.45}
+.tl-item .src-tag{font-size:9.5px;padding:1px 7px;border-radius:8px;border:1px solid var(--line);color:var(--muted);margin-left:6px}
+.play{background:linear-gradient(135deg,rgba(255,90,54,.1),rgba(255,90,54,.03));border:1px solid rgba(255,90,54,.35);border-radius:10px;padding:16px;margin-bottom:12px}
+.play .ph{font-size:11px;text-transform:uppercase;letter-spacing:.13em;color:var(--gold);font-weight:700;margin-bottom:8px}
+.play .pb{font-size:13px;line-height:1.55}
+.play .roi{display:flex;gap:18px;margin-top:10px;font-size:12px}
+.play .roi div b{color:var(--gold);font-family:inherit;font-weight:700;font-size:15px;display:block}
+.btn{display:inline-block;padding:9px 18px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);margin-right:8px;margin-top:4px}
+.btn.primary{background:var(--gold);color:#ffffff;border-color:var(--gold)}
+.btn:hover{opacity:.85}
+.guard{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--panel2);font-size:12px;line-height:1.6;color:var(--muted)}
+.guard b{color:var(--text)}
+.guard .gh{font-size:10.5px;text-transform:uppercase;letter-spacing:.13em;color:var(--gold);font-weight:700;margin-bottom:6px}
+.eligible{color:var(--green);font-weight:700}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--panel2);border:1px solid var(--gold);border-radius:10px;padding:14px 20px;font-size:13px;display:none;z-index:100;box-shadow:0 8px 30px rgba(0,0,0,.15)}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;letter-spacing:.08em}
+@media(max-width:1100px){.layout{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.factors{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 620 1000" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#FF5A36" stroke-width="58" style="width:100%;height:auto;display:block"><rect x="216" y="29" width="375" height="156"/><rect x="29" y="216" width="562" height="156"/><rect x="29" y="431" width="562" height="156"/><rect x="87" y="616" width="126" height="355"/></svg></div>
+    <div>
+      <h1>Fitzrovia</h1>
+      <p>Service Recovery Workbench</p>
+    </div>
+  </div>
+  <span class="demo-tag">DEMO · SYNTHETIC DATA</span>
+</header>
+<main>
+  <div class="kpis">
+    <div class="kpi"><div class="label">Active Cases</div><div class="value">14</div><div class="delta flat">5 awaiting PM approval</div></div>
+    <div class="kpi"><div class="label">Save Rate (12mo)</div><div class="value">64%</div><div class="delta up">of engaged at-risk residents renewed</div></div>
+    <div class="kpi"><div class="label">Revenue Protected YTD</div><div class="value">$412k</div><div class="delta up">23 renewals attributed to recovery</div></div>
+    <div class="kpi"><div class="label">Avg Time to Outreach</div><div class="value">9<span style="font-size:15px;color:var(--muted)">h</span></div><div class="delta up">target &lt; 24h from trigger</div></div>
+    <div class="kpi"><div class="label">Avg Recovery Cost</div><div class="value">$310</div><div class="delta up">vs $6,200 avg cost of a turn</div></div>
+  </div>
+
+  <div class="pipeline">
+    <div class="pipe-step"><b>3</b>Detected</div>
+    <div class="pipe-step"><b>2</b>Triaged</div>
+    <div class="pipe-step"><b>5</b>Awaiting Approval</div>
+    <div class="pipe-step"><b>2</b>Play Executed</div>
+    <div class="pipe-step"><b>2</b>In Follow-up</div>
+    <div class="pipe-step"><b>23</b>Recovered YTD</div>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="card">
+        <h2>Recovery Queue</h2>
+        <div class="sub">Sorted by severity × lease urgency · click to open case</div>
+        <div id="queue"></div>
+      </div>
+      <div class="card">
+        <div class="guard">
+          <div class="gh">⚖ Guardrails — enforced by system</div>
+          <b>Triggers require a verified service failure</b> (SLA breach, repeat fault, habitability issue, billing error) — never review tone or complaint volume alone.<br><br>
+          <b>Caps:</b> concessions ≤ $500/case without director sign-off; max 1 monetary play per resident per 12 months.<br><br>
+          <b>Fairness check:</b> monthly audit compares recovery spend across demographics & buildings.<br><br>
+          <b>Every action logged</b> to the resident record in Yardi with reason code.
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card" id="caseCard"></div>
+    </div>
+  </div>
+</main>
+<footer>Prepared as a concept demonstration for Fitzrovia · All resident data is synthetic · Built with AI-assisted development</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+const CASES=[
+ {id:'SR-2214',who:'Unit 2214 · Parker',sev:87,sevC:'var(--red)',stage:'st-triaged',stageL:'AWAITING APPROVAL',line:'Lease exp. Sep 30 · 3 elevator complaints · declined renewal email',
+  tenure:'3.2 yrs',rent:'$2,610/mo',ltv:'$94k paid to date',expiry:'Sep 30 (85 days)',failure:'SLA breach ×2 (elevator #2)',eligible:true,
+  timeline:[
+   {d:'Jul 5',cls:'neg',src:'Ticket',t:'Elevator entrapment report, 22 min wait for release. Third elevator-related ticket in 60 days.'},
+   {d:'Jun 28',cls:'neg',src:'Email',t:'Declined renewal outreach email (no response, link not opened ×2).'},
+   {d:'Jun 14',cls:'neg',src:'Survey',t:'Pulse survey NPS 3 (was 9 in Dec). Verbatim: "love the unit, can\'t stand the wait every morning."'},
+   {d:'May 30',cls:'neg',src:'Ticket',t:'Elevator wait complaint — SLA breached (no response for 4 days).'},
+   {d:'Mar 12',cls:'pos',src:'Ticket',t:'Dishwasher repair — resolved same day, rated 5/5.'},
+   {d:'Dec 2024',cls:'pos',src:'Survey',t:'Annual survey NPS 9. "Concierge team is fantastic."'}],
+  play:{name:'Priority-floor transfer + timeline letter',body:'Offer transfer to available lower-floor 1BR+D (unit 806, same layout, $35 less) OR one-time $400 concession at renewal. Pair with the elevator-modernization timeline letter and personal call from PM — this resident was an NPS 9 eight months ago; the relationship is recoverable.',
+   cost:'$400 max',risk:'$31.3k annualized rent at risk',conf:'74% modeled save probability'}},
+ {id:'SR-1108',who:'Unit 1108 · Parker',sev:81,sevC:'var(--red)',stage:'st-detected',stageL:'DETECTED',line:'Lease exp. Oct 15 · matched 2★ Google review · 2 unresolved tickets',
+  tenure:'1.8 yrs',rent:'$2,545/mo',ltv:'$52k paid to date',expiry:'Oct 15 (100 days)',failure:'2 open tickets > 10 days',eligible:true,
+  timeline:[
+   {d:'Jul 3',cls:'neg',src:'Google',t:'2★ review authored ("waiting 10+ min for elevator... third month in a row"). AI match to unit: probable (87%) — requires human confirmation before any resident-specific action.'},
+   {d:'Jun 30',cls:'neg',src:'Ticket',t:'WO-4821 balcony door seal — open 12 days, parts delay not communicated.'},
+   {d:'Jun 22',cls:'neg',src:'Ticket',t:'WO-4790 bathroom fan noise — open 20 days.'},
+   {d:'Feb 10',cls:'pos',src:'Survey',t:'Move-in +12mo survey: 8/10, "great building, responsive staff."'}],
+  play:{name:'Fix-first sequence',body:'Do NOT lead with a concession. Close both open tickets within 72h (parts for WO-4821 arrived yesterday), have PM call to apologize for the communication gap, then confirm review match in person — if confirmed, invite updated review after resolution. Concession only if renewal conversation stalls.',
+   cost:'$0–250',risk:'$30.5k annualized rent at risk',conf:'68% modeled save probability'}},
+ {id:'SR-0507',who:'Unit 507 · Waverley',sev:74,sevC:'var(--amber)',stage:'st-approved',stageL:'PLAY APPROVED',line:'Lease exp. Aug 31 · billing dispute · survey detractor',
+  tenure:'0.9 yrs (student)',rent:'$3,380/mo',ltv:'$30k paid to date',expiry:'Aug 31 (55 days)',failure:'Billing error (fee misapplied)',eligible:true,
+  timeline:[
+   {d:'Jul 6',cls:'act',src:'System',t:'Play approved by PM: waive disputed $85 fee + plain-language statement. Executing today.'},
+   {d:'Jun 20',cls:'neg',src:'Survey',t:'Move-out-intent survey: NPS 2, cited "surprise charges."'},
+   {d:'Jun 12',cls:'neg',src:'Ticket',t:'Billing dispute opened — wall-repair charge applied in error (pre-existing damage documented at move-in).'}],
+  play:{name:'Waive + clarify (approved)',body:'Fee waived ($85), clarified statement sent, apology from Resident Services. Follow-up call booked Jul 14 to discuss renewal — student segment renews at 81% when disputes resolve before August.',
+   cost:'$85',risk:'$40.6k annualized rent at risk',conf:'79% modeled save probability'}},
+ {id:'SR-1802',who:'Unit 1802 · Maddox Tyndall',sev:69,sevC:'var(--amber)',stage:'st-executed',stageL:'PLAY EXECUTED',line:'Lease exp. Sep 15 · parking fault affects unit · renewal unengaged',
+  tenure:'2.1 yrs',rent:'$2,230/mo',ltv:'$56k paid to date',expiry:'Sep 15 (70 days)',failure:'Repeat fault (garage door ×6/wk)',eligible:true,
+  timeline:[
+   {d:'Jul 6',cls:'act',src:'System',t:'Executed: $75/mo parking credit until motor replacement completes (ETA Jul 12, per WO-8845). Personal email sent by PM.'},
+   {d:'Jul 4',cls:'neg',src:'Ticket',t:'6th garage door fault this week; resident parks on P2.'},
+   {d:'Jun 25',cls:'neg',src:'Email',t:'No engagement with renewal offer (sent 3 wks ago).'}],
+  play:{name:'Parking credit until repair (executed)',body:'Credit active. Follow-up scheduled Jul 15 — confirm door fixed, then renewal conversation. Monitoring for engagement.',
+   cost:'$150 est. total',risk:'$26.8k annualized rent at risk',conf:'71% modeled save probability'}},
+ {id:'SR-0903',who:'Unit 903 · Marlow',sev:63,sevC:'var(--amber)',stage:'st-followup',stageL:'IN FOLLOW-UP',line:'Lease exp. Oct 1 · noise complaints (west wing) · positive history',
+  tenure:'2.7 yrs',rent:'$2,890/mo',ltv:'$91k paid to date',expiry:'Oct 1 (86 days)',failure:'Unresolved noise issue (3 reports)',eligible:true,
+  timeline:[
+   {d:'Jul 2',cls:'act',src:'System',t:'Offered transfer to east-facing unit 911 at renewal, same rate. Resident viewing scheduled Jul 9.'},
+   {d:'Jun 18',cls:'neg',src:'Ticket',t:'3rd noise complaint (street-side construction, west wing).'},
+   {d:'Jan 15',cls:'pos',src:'Google',t:'4★ review: "well run building, minor noise issues."'}],
+  play:{name:'Unit transfer at renewal (in progress)',body:'Viewing Jul 9. If accepted: renewal + transfer processed together, zero concession cost. High-tenure, high-sentiment resident — strong save candidate.',
+   cost:'$0 (turn cost offset by retention)',risk:'$34.7k annualized rent at risk',conf:'82% modeled save probability'}},
+ {id:'SR-0311',who:'Unit 311 · Maddox Cabbagetown',sev:58,sevC:'var(--amber)',stage:'st-detected',stageL:'DETECTED — REVIEW ELIGIBILITY',line:'Frequent complainant · no verified service failure',
+  tenure:'1.1 yrs',rent:'$2,090/mo',ltv:'$27k paid to date',expiry:'Feb 2027 (220 days)',failure:'None verified',eligible:false,
+  timeline:[
+   {d:'Jul 1',cls:'neg',src:'Ticket',t:'11th ticket in 90 days — mix of cosmetic requests and neighbour complaints. All resolved within SLA.'},
+   {d:'Jun 10',cls:'neg',src:'Google',t:'3★ review citing "slow management" — all tickets show in-SLA resolution.'}],
+  play:{name:'No monetary play — guardrail triggered',body:'System flags: high complaint volume but zero verified service failures — all tickets resolved within SLA. Monetary recovery here would train complaint behaviour. Recommended instead: PM conversation to reset expectations, document pattern. Case visible for transparency, not eligible for concessions.',
+   cost:'$0',risk:'Low (lease 220 days out)',conf:'N/A — guardrail case'}}
+];
+
+let active='SR-2214';
+function renderQueue(){
+ document.getElementById('queue').innerHTML=CASES.map(c=>
+  `<div class="case ${active===c.id?'active':''}" onclick="openCase('${c.id}')">
+    <div class="top"><span class="who">${c.who}</span><span class="sev" style="color:${c.sevC}">${c.sev}</span></div>
+    <div class="line2">${c.line}</div>
+    <span class="stage ${c.stage}">${c.stageL}</span>
+  </div>`).join('');
+}
+function openCase(id){
+ active=id;renderQueue();
+ const c=CASES.find(x=>x.id===id);
+ document.getElementById('caseCard').innerHTML=`
+  <div class="detail-head">
+    <div><h3>${c.who} <span style="font-size:12px;color:var(--muted)">· ${c.id}</span></h3>
+    <div class="m">Verified service failure: <b style="color:${c.eligible?'var(--text)':'var(--red)'}">${c.failure}</b> · Eligibility: ${c.eligible?'<span class="eligible">ELIGIBLE</span>':'<span style="color:var(--red);font-weight:700">NOT ELIGIBLE — guardrail</span>'}</div></div>
+    <div class="scorebox"><div class="n" style="color:${c.sevC}">${c.sev}</div><div class="l">Severity × Urgency</div></div>
+  </div>
+  <div class="factors">
+    <div class="factor"><div class="fl">Tenure</div><div class="fv">${c.tenure}</div></div>
+    <div class="factor"><div class="fl">Rent</div><div class="fv">${c.rent}</div></div>
+    <div class="factor"><div class="fl">Lifetime Value</div><div class="fv">${c.ltv}</div></div>
+    <div class="factor"><div class="fl">Lease Expiry</div><div class="fv">${c.expiry}</div></div>
+    <div class="factor"><div class="fl">At-Risk Revenue</div><div class="fv">${c.play.risk.split(' ')[0]}</div></div>
+  </div>
+  <div class="play">
+    <div class="ph">✦ Recommended Play — ${c.play.name}</div>
+    <div class="pb">${c.play.body}</div>
+    <div class="roi">
+      <div><b>${c.play.cost}</b>Play cost</div>
+      <div><b>${c.play.risk}</b>Revenue at risk</div>
+      <div><b>${c.play.conf}</b>${c.eligible?'Save probability':'—'}</div>
+    </div>
+    ${c.eligible&&c.stage==='st-detected'||c.stage==='st-triaged'?
+     `<div style="margin-top:12px"><span class="btn primary" onclick="toast('Play approved for ${c.id} — outreach draft sent to PM, action logged to Yardi resident record')">Approve Play</span>
+      <span class="btn" onclick="toast('Alternative plays generated for ${c.id}')">See Alternatives</span>
+      <span class="btn" onclick="toast('${c.id} dismissed — reason logged, model will recalibrate')">Dismiss</span></div>`:''}
+  </div>
+  <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:.13em;color:var(--gold);margin:14px 0 12px">Resident Timeline — all sources</h2>
+  <div class="timeline">${c.timeline.map(t=>
+   `<div class="tl-item ${t.cls}"><div class="d">${t.d}<span class="src-tag">${t.src}</span></div><div class="t">${t.t}</div></div>`).join('')}
+  </div>`;
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent='✓ '+msg;t.style.display='block';setTimeout(()=>t.style.display='none',3500);}
+renderQueue();openCase(active);
+</script>
+</body>
+</html>

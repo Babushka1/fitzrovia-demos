@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model Lab · LLM Feedback Scoring</title>
+<style>
+:root{--accent:#ff5a36;--text:#17130f;--muted:#7a736c;--line:#eee4df;--panel2:#fdf5f2;--green:#148a46;--red:#c0182f;--amber:#a86a00}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#fff;color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.5}
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:14px}
+.mark{width:24px}
+.brand h1{font-size:16px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.brand p{font-size:11px;color:var(--accent);letter-spacing:.18em;text-transform:uppercase;margin-top:2px}
+a.back{font-size:12px;color:var(--accent);text-decoration:none;font-weight:600}
+main{max-width:1200px;margin:0 auto;padding:28px 32px 60px}
+.intro{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin-bottom:20px;font-size:13.5px;line-height:1.6}
+.intro b{color:var(--accent)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--accent);margin-bottom:4px;font-weight:700}
+.card .sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+.ex-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.ex-tab{padding:7px 14px;border-radius:20px;font-size:11.5px;cursor:pointer;border:1px solid var(--line);color:var(--muted)}
+.ex-tab.active{background:rgba(255,90,54,.1);border-color:var(--accent);color:var(--accent);font-weight:700}
+.input-box{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel2);font-size:13px;line-height:1.55;min-height:90px;margin-bottom:12px}
+.input-box .src{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:6px;font-weight:700}
+pre{background:#1c1713;color:#f5ede8;border-radius:10px;padding:16px;font-size:11.5px;overflow-x:auto;line-height:1.6}
+pre .k{color:#ffb59e}
+.note{font-size:12px;color:var(--muted);border-top:1px solid var(--line);margin-top:14px;padding-top:10px;line-height:1.55}
+.note b{color:var(--accent)}
+textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px;font-family:inherit;min-height:90px;resize:vertical;outline:none}
+textarea:focus{border-color:var(--accent)}
+button{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:12.5px;font-weight:700;cursor:pointer;margin-top:10px}
+button:disabled{opacity:.5;cursor:default}
+.live-status{font-size:12px;margin-top:10px;color:var(--muted)}
+.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:10.5px;font-weight:700;margin-left:8px}
+.b-on{background:rgba(20,138,70,.12);color:var(--green)}
+.b-off{background:rgba(168,106,0,.12);color:var(--amber)}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 620 1000" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#FF5A36" stroke-width="58" style="width:100%;height:auto;display:block"><rect x="216" y="29" width="375" height="156"/><rect x="29" y="216" width="562" height="156"/><rect x="29" y="431" width="562" height="156"/><rect x="87" y="616" width="126" height="355"/></svg></div>
+    <div><h1>Model Lab 03</h1><p>LLM Feedback Scoring</p></div>
+  </div>
+  <a class="back" href="../index.html">← All demos</a>
+</header>
+<main>
+  <div class="intro">
+    <b>Unlike Labs 01–02, this isn't a regression.</b> A large language model reads free text — a Google review, a survey verbatim, a maintenance ticket — and returns a <b>fixed JSON structure</b>: sentiment, topics, severity, churn signal, routing. The "math" is a contract: same prompt, same schema, temperature 0, every time. Those structured outputs are what feed the regressions in Labs 01–02 (e.g., the sentiment score is a feature in the renewal model). Full method: <a href="../docs/llm-scoring-methodology.md" style="color:var(--accent)">docs/llm-scoring-methodology.md</a>.
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>Precomputed Examples</h2>
+        <div class="sub">Real model outputs, cached at build time — click through</div>
+        <div class="ex-tabs" id="tabs"></div>
+        <div class="input-box"><div class="src" id="exSrc"></div><div id="exText"></div></div>
+        <pre id="exOut"></pre>
+        <div class="note"><b>Why precomputed:</b> a static site can't hold an API key safely (anyone can read the page source and steal it). So these six were scored once and cached. The live panel on the right shows how the real thing works when a $0-cost serverless proxy holds the key instead.</div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>Live Scoring <span class="badge b-off" id="liveBadge">CHECKING…</span></h2>
+        <div class="sub">Works when deployed to Vercel with an <code>ANTHROPIC_API_KEY</code> — see README. The key lives on the server; the browser never sees it.</div>
+        <textarea id="liveIn" placeholder="Paste any review, survey comment, or maintenance ticket text…">Love the building and staff but my parking spot has been blocked by construction equipment for two weeks and nobody responds to my emails. Starting to look at other options.</textarea>
+        <button id="liveBtn" onclick="scoreLive()">Score with live model</button>
+        <div class="live-status" id="liveStatus"></div>
+        <pre id="liveOut" style="display:none"></pre>
+      </div>
+      <div class="card">
+        <h2>The Prompt Contract</h2>
+        <div class="sub">The exact instruction sent with every text — this IS the model spec</div>
+<pre>You are a scoring function for a rental-housing
+operator. Read the resident text and return ONLY
+valid JSON matching this schema:
+
+{
+ "sentiment": float −1.0 … +1.0,
+ "topics": [up to 3 from fixed taxonomy:
+   elevator, maintenance_speed, noise, staff,
+   amenities, billing, cleanliness, parking,
+   pests, safety, communication, rent_value,
+   move_in_out, other],
+ "severity": "low" | "medium" | "high",
+ "churn_signal": true | false,
+   // true only on explicit leaving intent
+   // or unresolved repeat failure
+ "routing": "maintenance" | "resident_services"
+          | "property_manager" | "none",
+ "summary": string, max 15 words
+}
+
+Rules: temperature 0. No prose outside JSON.
+If text is ambiguous, severity="low" and
+churn_signal=false (fail conservative).</pre>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ---------- Precomputed examples (input → cached model output) ----------
+const EXAMPLES=[
+ {label:'Angry Google review',src:'Google Review · 2★ · Parker',
+  text:'"Love my unit but waiting 10+ minutes for an elevator at 8am is unacceptable. Third month in a row. Management keeps promising fixes that never come."',
+  out:{sentiment:-0.7,topics:['elevator','communication'],severity:'high',churn_signal:true,routing:'property_manager',summary:'Repeat elevator delays, broken promises, renewal at risk'}},
+ {label:'Positive review',src:'Google Review · 5★ · Elm-Ledbury',
+  text:'"The concierge team remembered my dog\'s name on day two. Genuinely the best rental experience I\'ve had in Toronto."',
+  out:{sentiment:0.9,topics:['staff'],severity:'low',churn_signal:false,routing:'none',summary:'Concierge praise, strong positive, feature in renewal comms'}},
+ {label:'Urgent ticket',src:'Maintenance Ticket · Waverley 507',
+  text:'"No heat in my unit since last night, thermostat reads 16 degrees. I have a newborn. Please send someone today."',
+  out:{sentiment:-0.6,topics:['maintenance_speed'],severity:'high',churn_signal:false,routing:'maintenance',summary:'No heat, habitability issue, vulnerable occupant, same-day dispatch'}},
+ {label:'Mixed survey',src:'Pulse Survey · Sloane',
+  text:'"Amenities are great, gym gets crowded 5-7pm but it\'s manageable. Only real gripe is the package room chaos in December."',
+  out:{sentiment:0.4,topics:['amenities','other'],severity:'low',churn_signal:false,routing:'none',summary:'Positive overall; gym peak crowding and seasonal package congestion'}},
+ {label:'Billing dispute',src:'Email → Ticket · Waverley',
+  text:'"I was charged $85 for wall repair but the damage was documented at my move-in inspection. This is the second billing mistake this year. Fix it or I\'m done."',
+  out:{sentiment:-0.8,topics:['billing'],severity:'medium',churn_signal:true,routing:'resident_services',summary:'Documented billing error, repeat incident, explicit leaving threat'}},
+ {label:'French input',src:'Ticket · Loxley Mille Carré',
+  text:'"La fenêtre de ma chambre ne ferme pas complètement et il y a un courant d\'air. Sinon très satisfait de l\'immeuble."',
+  out:{sentiment:0.2,topics:['maintenance_speed'],severity:'medium',churn_signal:false,routing:'maintenance',summary:'Window seal fault, drafty; otherwise satisfied; respond in French'}}
+];
+let cur=0;
+function renderTabs(){
+ document.getElementById('tabs').innerHTML=EXAMPLES.map((e,i)=>
+  `<div class="ex-tab ${i===cur?'active':''}" onclick="cur=${i};renderTabs()">${e.label}</div>`).join('');
+ const e=EXAMPLES[cur];
+ document.getElementById('exSrc').textContent=e.src;
+ document.getElementById('exText').textContent=e.text;
+ document.getElementById('exOut').textContent=JSON.stringify(e.out,null,2);
+}
+renderTabs();
+
+// ---------- Live mode: calls the serverless proxy if deployed ----------
+async function checkLive(){
+ const badge=document.getElementById('liveBadge');
+ try{
+  const r=await fetch('/api/score',{method:'GET'});
+  if(r.ok){badge.textContent='LIVE';badge.className='badge b-on';return;}
+  throw 0;
+ }catch(e){
+  badge.textContent='OFFLINE — PRECOMPUTED ONLY';badge.className='badge b-off';
+  document.getElementById('liveBtn').disabled=true;
+  document.getElementById('liveStatus').textContent='Live mode activates automatically once this site is deployed to Vercel with an ANTHROPIC_API_KEY environment variable (see README — ~5 minutes). Locally, the precomputed examples tell the same story.';
+ }
+}
+async function scoreLive(){
+ const btn=document.getElementById('liveBtn'),st=document.getElementById('liveStatus'),out=document.getElementById('liveOut');
+ btn.disabled=true;st.textContent='Scoring…';out.style.display='none';
+ try{
+  const r=await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({text:document.getElementById('liveIn').value})});
+  const j=await r.json();
+  if(!r.ok)throw new Error(j.error||'Request failed');
+  out.textContent=JSON.stringify(j,null,2);out.style.display='block';st.textContent='Scored by the live model via the serverless proxy.';
+ }catch(e){st.textContent='Error: '+e.message;}
+ btn.disabled=false;
+}
+checkLive();
+</script>
+</body>
+</html>

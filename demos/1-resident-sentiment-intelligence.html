@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fitzrovia · Resident Sentiment Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#ffffff; --panel:#ffffff; --panel2:#fdf5f2; --line:#eee4df;
+  --gold:#ff5a36; --gold-dim:#d43e1e; --text:#17130f; --muted:#7a736c;
+  --green:#148a46; --red:#c0182f; --amber:#a86a00; --blue:#135fc2;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:14px}
+.serif{font-family:inherit}
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);z-index:50}
+.brand{display:flex;align-items:center;gap:14px}
+.brand .mark{width:24px;display:flex;align-items:center}
+.brand h1{font-size:17px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.brand p{font-size:11px;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;margin-top:2px}
+.demo-tag{font-size:10px;color:var(--muted);border:1px solid var(--line);padding:4px 10px;border-radius:20px;letter-spacing:.1em}
+.controls{display:flex;gap:10px;align-items:center}
+select{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer;outline:none}
+select:hover{border-color:var(--gold-dim)}
+main{padding:24px 32px;max-width:1500px;margin:0 auto}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),transparent)}
+.kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.kpi .value{font-size:30px;font-family:inherit;font-weight:700;color:var(--text)}
+.kpi .delta{font-size:12px;margin-top:6px}
+.up{color:var(--green)}.down{color:var(--red)}.flat{color:var(--amber)}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:1.6fr 1fr}
+.g2b{grid-template-columns:1fr 1fr}
+.card{background:var(--panel);border:1px solid var(--line);box-shadow:0 1px 3px rgba(0,0,0,.04);border-radius:12px;padding:20px;margin-bottom:14px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);margin-bottom:4px;font-weight:600}
+.card .sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:600}
+td{padding:10px;border-bottom:1px solid rgba(0,0,0,.05)}
+tr:hover td{background:rgba(255,90,54,.04)}
+tr{cursor:pointer}
+.bname{font-weight:600}
+.bsub{font-size:11px;color:var(--muted)}
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.pill.low{background:rgba(20,138,70,.12);color:var(--green)}
+.pill.med{background:rgba(168,106,0,.12);color:var(--amber)}
+.pill.high{background:rgba(192,24,47,.14);color:var(--red)}
+.stars{color:var(--gold);letter-spacing:2px;font-size:12px}
+.spark{display:inline-block;vertical-align:middle}
+.driver-row{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.driver-row .dlabel{width:150px;font-size:12.5px;color:var(--text)}
+.driver-row .bar-wrap{flex:1;display:flex;align-items:center;height:20px;position:relative}
+.driver-row .mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line)}
+.driver-row .bar{height:14px;border-radius:3px}
+.driver-row .val{width:52px;font-size:12px;text-align:right;font-weight:600}
+.feed-item{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+.feed-item:last-child{border:none}
+.src{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;border:1px solid var(--line)}
+.src.google{background:rgba(19,95,194,.1)}
+.src.survey{background:rgba(255,90,54,.1)}
+.src.ticket{background:rgba(192,24,47,.08)}
+.feed-item .meta{font-size:11px;color:var(--muted);margin-bottom:3px}
+.feed-item .txt{font-size:13px;line-height:1.45}
+.feed-item .tag{font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px;font-weight:600}
+.tag.neg{background:rgba(192,24,47,.14);color:var(--red)}
+.tag.pos{background:rgba(20,138,70,.12);color:var(--green)}
+.tag.neu{background:rgba(122,115,108,.15);color:var(--muted)}
+.churn-item{padding:12px 14px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;background:var(--panel2)}
+.churn-item .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.churn-item .who{font-weight:600;font-size:13px}
+.churn-item .why{font-size:12px;color:var(--muted);line-height:1.4}
+.risk-num{font-family:inherit;font-weight:700;font-size:17px}
+.ai-note{background:linear-gradient(135deg,rgba(255,90,54,.08),rgba(255,90,54,.02));border:1px solid rgba(255,90,54,.25);border-radius:12px;padding:16px 20px;margin-bottom:14px;font-size:13px;line-height:1.55}
+.ai-note b{color:var(--gold)}
+.ai-note .hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);font-weight:600}
+canvas{max-height:260px}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;letter-spacing:.08em}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.g2,.g2b{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 620 1000" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#FF5A36" stroke-width="58" style="width:100%;height:auto;display:block"><rect x="216" y="29" width="375" height="156"/><rect x="29" y="216" width="562" height="156"/><rect x="29" y="431" width="562" height="156"/><rect x="87" y="616" width="126" height="355"/></svg></div>
+    <div>
+      <h1>Fitzrovia</h1>
+      <p>Resident Sentiment Intelligence</p>
+    </div>
+  </div>
+  <div class="controls">
+    <select id="buildingFilter" onchange="applyFilter()">
+      <option value="all">All Communities</option>
+    </select>
+    <select id="rangeFilter" onchange="applyFilter()">
+      <option value="12">Last 12 months</option>
+      <option value="6">Last 6 months</option>
+      <option value="3">Last 3 months</option>
+    </select>
+    <span class="demo-tag">DEMO · SYNTHETIC DATA</span>
+  </div>
+</header>
+<main>
+  <div class="ai-note">
+    <div class="hdr">✦ AI Weekly Brief — generated Mon 8:00 AM</div>
+    <span id="aiBrief">Portfolio sentiment is <b>up 4.2 pts</b> this month, driven by concierge praise at <b>Elm-Ledbury</b> and amenity satisfaction at <b>Sloane</b>. Watch item: <b>elevator wait times at Parker</b> appeared in 14 reviews, 9 surveys, and 31 tickets in 30 days — now the #1 churn-correlated topic for that building. Recommended: prioritize the Parker elevator modernization quote and notify residents of the timeline; historically, proactive comms recover ~60% of at-risk sentiment on this topic.</span>
+  </div>
+
+  <div class="kpis" id="kpiRow"></div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h2>Sentiment Trend by Source</h2>
+      <div class="sub">Blended score 0–100 · Google reviews, pulse surveys, and service-ticket CSAT</div>
+      <canvas id="trendChart"></canvas>
+    </div>
+    <div class="card">
+      <h2>What Drives Satisfaction vs. Churn</h2>
+      <div class="sub">Topic impact on blended sentiment (NLP topic model, 90 days)</div>
+      <div id="drivers"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Community Scorecard</h2>
+    <div class="sub">Click a row to focus the dashboard on that community</div>
+    <table id="buildingTable">
+      <thead><tr>
+        <th>Community</th><th>Google</th><th>Survey NPS</th><th>Ticket CSAT</th><th>Blended</th><th>90-day Trend</th><th>Churn Risk</th><th>Top Issue</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="grid g2b">
+    <div class="card">
+      <h2>Flagged Feedback — Needs Attention</h2>
+      <div class="sub">AI-prioritized across all three sources, deduplicated by theme</div>
+      <div id="feed"></div>
+    </div>
+    <div class="card">
+      <h2>Churn Watchlist</h2>
+      <div class="sub">Residents with lease expiry &lt; 120 days + negative sentiment signals</div>
+      <div id="churn"></div>
+    </div>
+  </div>
+</main>
+<footer>Prepared as a concept demonstration for Fitzrovia · All resident data is synthetic · Built with AI-assisted development</footer>
+
+<script>
+const MONTHS=['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul'];
+const BUILDINGS=[
+ {id:'elm',name:'Elm-Ledbury',brand:'The Collection',loc:'Queen & Church, Toronto',units:542,google:4.7,nps:52,csat:88,blended:86,trend:[80,81,82,83,83,84,84,85,85,86,86,86],risk:'low',riskPct:4.1,issue:'Package room congestion'},
+ {id:'sloane',name:'Sloane',brand:'The Collection',loc:'Yorkdale, North York',units:466,google:4.6,nps:48,csat:85,blended:84,trend:[78,79,80,80,81,82,83,83,84,84,84,84],risk:'low',riskPct:5.0,issue:'Gym equipment wait times'},
+ {id:'parker',name:'Parker',brand:'The Collection',loc:'Midtown, Toronto',units:316,google:4.2,nps:31,csat:74,blended:71,trend:[82,81,80,79,78,77,76,75,74,73,72,71],risk:'high',riskPct:12.8,issue:'Elevator wait times'},
+ {id:'marlow',name:'Marlow',brand:'The Collection',loc:'Bloordale Village, Toronto',units:240,google:4.5,nps:44,csat:83,blended:81,trend:[76,77,77,78,79,79,80,80,81,81,81,81],risk:'low',riskPct:5.6,issue:'Street noise (west wing)'},
+ {id:'waverley',name:'Waverley',brand:'Waverley',loc:'College & Spadina, Toronto',units:166,google:4.4,nps:39,csat:80,blended:78,trend:[74,75,75,76,76,77,77,78,78,78,78,78],risk:'med',riskPct:8.9,issue:'Move-out billing clarity'},
+ {id:'cabb',name:'Maddox Cabbagetown',brand:'Maddox',loc:'Cabbagetown South, Toronto',units:180,google:4.3,nps:35,csat:79,blended:76,trend:[73,73,74,74,75,75,75,76,76,76,76,76],risk:'med',riskPct:7.4,issue:'Laundry machine downtime'},
+ {id:'tyndall',name:'Maddox Tyndall',brand:'Maddox',loc:'Liberty Village, Toronto',units:214,google:4.4,nps:38,csat:81,blended:78,trend:[75,75,76,76,76,77,77,77,78,78,78,78],risk:'med',riskPct:6.8,issue:'Parking garage door faults'},
+ {id:'loxley',name:'Loxley Mille Carré',brand:'Loxley',loc:'Golden Square Mile, Montréal',units:322,google:4.6,nps:46,csat:84,blended:83,trend:[79,79,80,80,81,81,82,82,82,83,83,83],risk:'low',riskPct:4.8,issue:'Bilingual support requests'}
+];
+const DRIVERS=[
+ {label:'Concierge & staff',v:+8.4},{label:'Amenity quality',v:+6.1},{label:'Move-in experience',v:+4.9},
+ {label:'Cleanliness',v:+3.2},{label:'Community events',v:+2.4},
+ {label:'Rent value perception',v:-2.8},{label:'Noise complaints',v:-3.5},
+ {label:'Maintenance speed',v:-4.7},{label:'Elevator wait times',v:-7.2}
+];
+const FEED=[
+ {src:'google',icon:'★',b:'Parker',t:'2 days ago',sent:'neg',txt:'"Love my unit but waiting 10+ minutes for an elevator at 8am is unacceptable. Third month in a row." — 2★ Google review · AI: matches 31 open tickets, topic trending +45%'},
+ {src:'ticket',icon:'⚙',b:'Maddox Tyndall',t:'3 days ago',sent:'neg',txt:'Garage door fault reported 6× this week (units P2–P3). AI: same asset flagged in predictive-maintenance queue; suggest bundling repair.'},
+ {src:'survey',icon:'✎',b:'Waverley',t:'4 days ago',sent:'neg',txt:'Pulse survey: 5 of 12 move-out respondents cited unclear final billing. AI: drafting a plain-language move-out statement template could resolve theme.'},
+ {src:'google',icon:'★',b:'Elm-Ledbury',t:'5 days ago',sent:'pos',txt:'"The concierge team remembered my dog\'s name on day two. Genuinely the best rental experience I\'ve had in Toronto." — 5★ · AI: 8th concierge mention this month, feature in renewal comms.'},
+ {src:'survey',icon:'✎',b:'Sloane',t:'6 days ago',sent:'pos',txt:'Q2 pulse: amenity satisfaction 91% (portfolio high). Co-working lounge most cited. AI: candidate case study for Rushden Station pre-leasing.'},
+ {src:'ticket',icon:'⚙',b:'Maddox Cabbagetown',t:'1 week ago',sent:'neu',txt:'Laundry room: 4 machines out of service > 48h. Vendor SLA breach flagged; auto-escalated to property manager.'}
+];
+const CHURN=[
+ {who:'Unit 2214 · Parker',score:87,why:'Lease expires Sep 30 · 3 elevator complaints · declined renewal email · sentiment ↓ 22pts in 60 days',act:'Offer: priority transfer or 1-month concession'},
+ {who:'Unit 1108 · Parker',score:81,why:'Lease expires Oct 15 · 2★ Google review authored (matched by AI) · 2 unresolved tickets',act:'Action: PM call scheduled, resolve ticket #4821 first'},
+ {who:'Unit 507 · Waverley',score:74,why:'Lease expires Aug 31 · survey detractor (NPS 2) · billing dispute open',act:'Action: waive disputed fee ($85), send clarified statement'},
+ {who:'Unit 1802 · Maddox Tyndall',score:69,why:'Lease expires Sep 15 · parking fault affects unit · no engagement with renewal offer',act:'Offer: parking credit until garage repair completes'},
+ {who:'Unit 903 · Marlow',score:63,why:'Lease expires Oct 1 · noise complaints (west wing) · otherwise positive history',act:'Offer: transfer to east-facing unit at renewal'}
+];
+
+// KPI row
+function kpis(list){
+  const avgG=(list.reduce((s,b)=>s+b.google,0)/list.length).toFixed(1);
+  const avgN=Math.round(list.reduce((s,b)=>s+b.nps,0)/list.length);
+  const avgB=Math.round(list.reduce((s,b)=>s+b.blended,0)/list.length);
+  const atRisk=Math.round(list.reduce((s,b)=>s+b.units*b.riskPct/100,0));
+  const units=list.reduce((s,b)=>s+b.units,0);
+  return [
+   {l:'Blended Sentiment',v:avgB,d:'+4.2 pts vs last quarter',c:'up'},
+   {l:'Avg Google Rating',v:avgG+'★',d:'+0.2 vs last quarter',c:'up'},
+   {l:'Portfolio NPS',v:avgN,d:'+6 vs last quarter',c:'up'},
+   {l:'Residents At Risk',v:atRisk,d:(100*atRisk/units).toFixed(1)+'% of '+units.toLocaleString()+' units',c:'down'},
+   {l:'Feedback Items / 30d',v:'1,284',d:'412 reviews · 388 surveys · 484 tickets',c:'flat'}
+  ];
+}
+function renderKpis(list){
+  document.getElementById('kpiRow').innerHTML=kpis(list).map(k=>
+   `<div class="kpi"><div class="label">${k.l}</div><div class="value">${k.v}</div><div class="delta ${k.c}">${k.d}</div></div>`).join('');
+}
+
+// Drivers
+function renderDrivers(){
+  const max=9;
+  document.getElementById('drivers').innerHTML=DRIVERS.map(d=>{
+    const w=Math.abs(d.v)/max*50;
+    const pos=d.v>0;
+    return `<div class="driver-row">
+      <div class="dlabel">${d.label}</div>
+      <div class="bar-wrap"><div class="mid"></div>
+        <div class="bar" style="margin-left:${pos?50:50-w}%;width:${w}%;background:${pos?'rgba(20,138,70,.7)':'rgba(192,24,47,.7)'}"></div>
+      </div>
+      <div class="val" style="color:${pos?'var(--green)':'var(--red)'}">${pos?'+':''}${d.v.toFixed(1)}</div>
+    </div>`;
+  }).join('');
+}
+
+// Table
+function sparkline(data,color){
+  const w=90,h=24,min=Math.min(...data),max=Math.max(...data);
+  const pts=data.map((v,i)=>`${(i/(data.length-1)*w).toFixed(1)},${(h-3-(v-min)/(max-min||1)*(h-6)).toFixed(1)}`).join(' ');
+  return `<svg class="spark" width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8"/></svg>`;
+}
+function renderTable(list){
+  document.querySelector('#buildingTable tbody').innerHTML=list.map(b=>{
+    const t=b.trend, up=t[t.length-1]>=t[0];
+    return `<tr onclick="focusBuilding('${b.id}')">
+     <td><div class="bname">${b.name}</div><div class="bsub">${b.brand} · ${b.loc} · ${b.units} units</div></td>
+     <td><span class="stars">${'★'.repeat(Math.round(b.google))}</span> ${b.google}</td>
+     <td>${b.nps}</td><td>${b.csat}%</td>
+     <td style="font-family:inherit;font-weight:700;font-size:16px">${b.blended}</td>
+     <td>${sparkline(t,up?'#148a46':'#c0182f')}</td>
+     <td><span class="pill ${b.risk}">${b.risk==='low'?'Low':b.risk==='med'?'Medium':'High'} · ${b.riskPct}%</span></td>
+     <td class="bsub" style="font-size:12px">${b.issue}</td></tr>`;
+  }).join('');
+}
+
+// Feed & churn
+function renderFeed(list){
+  const names=list.map(b=>b.name);
+  document.getElementById('feed').innerHTML=FEED.filter(f=>names.includes(f.b)).map(f=>
+   `<div class="feed-item">
+     <div class="src ${f.src}">${f.icon}</div>
+     <div><div class="meta">${f.b} · ${f.src==='google'?'Google Review':f.src==='survey'?'Pulse Survey':'Service Ticket'} · ${f.t}<span class="tag ${f.sent}">${f.sent==='neg'?'NEGATIVE':f.sent==='pos'?'POSITIVE':'NEUTRAL'}</span></div>
+     <div class="txt">${f.txt}</div></div></div>`).join('')||'<div class="bsub">No flagged items for this selection.</div>';
+}
+function renderChurn(list){
+  const names=list.map(b=>b.name);
+  document.getElementById('churn').innerHTML=CHURN.filter(c=>names.some(n=>c.who.includes(n))).map(c=>
+   `<div class="churn-item">
+     <div class="top"><span class="who">${c.who}</span><span class="risk-num" style="color:${c.score>75?'var(--red)':'var(--amber)'}">${c.score}<span style="font-size:11px;color:var(--muted)"> /100</span></span></div>
+     <div class="why">${c.why}</div>
+     <div class="why" style="color:var(--gold);margin-top:4px">→ ${c.act}</div>
+   </div>`).join('')||'<div class="bsub">No watchlist residents for this selection.</div>';
+}
+
+// Trend chart
+let chart;
+function renderChart(list,months){
+  const m=MONTHS.slice(12-months);
+  const avg=i=>Math.round(list.reduce((s,b)=>s+b.trend[i],0)/list.length);
+  const base=Array.from({length:12},(_,i)=>avg(i)).slice(12-months);
+  const g=base.map(v=>Math.min(100,v+6)), s=base.map(v=>v-3), t=base.map(v=>v+1);
+  if(chart)chart.destroy();
+  chart=new Chart(document.getElementById('trendChart'),{type:'line',data:{labels:m,datasets:[
+   {label:'Blended',data:base,borderColor:'#ff5a36',backgroundColor:'rgba(255,90,54,.08)',fill:true,tension:.35,borderWidth:2.5,pointRadius:0},
+   {label:'Google Reviews',data:g,borderColor:'#135fc2',tension:.35,borderWidth:1.5,pointRadius:0,borderDash:[4,3]},
+   {label:'Surveys',data:s,borderColor:'#148a46',tension:.35,borderWidth:1.5,pointRadius:0,borderDash:[4,3]},
+   {label:'Ticket CSAT',data:t,borderColor:'#c0182f',tension:.35,borderWidth:1.5,pointRadius:0,borderDash:[4,3]}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a736c',boxWidth:14,font:{size:11}}}},
+   scales:{x:{ticks:{color:'#7a736c'},grid:{color:'rgba(0,0,0,.06)'}},y:{min:55,max:100,ticks:{color:'#7a736c'},grid:{color:'rgba(0,0,0,.06)'}}}}});
+}
+
+function focusBuilding(id){
+  document.getElementById('buildingFilter').value=id;
+  applyFilter();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function applyFilter(){
+  const id=document.getElementById('buildingFilter').value;
+  const months=+document.getElementById('rangeFilter').value;
+  const list=id==='all'?BUILDINGS:BUILDINGS.filter(b=>b.id===id);
+  renderKpis(list);renderTable(list);renderFeed(list);renderChurn(list);renderChart(list,months);
+  const briefs={
+   all:'Portfolio sentiment is <b>up 4.2 pts</b> this month, driven by concierge praise at <b>Elm-Ledbury</b> and amenity satisfaction at <b>Sloane</b>. Watch item: <b>elevator wait times at Parker</b> appeared in 14 reviews, 9 surveys, and 31 tickets in 30 days — now the #1 churn-correlated topic for that building. Recommended: prioritize the Parker elevator modernization quote and notify residents of the timeline; historically, proactive comms recover ~60% of at-risk sentiment on this topic.',
+   parker:'<b>Parker</b> blended sentiment has fallen <b>11 pts in 12 months</b>, almost entirely attributable to elevator wait times (impact −7.2). 12.8% of residents show churn signals — concentrated on floors 15+. Recommended: expedite modernization quote, publish timeline to residents, and offer at-risk leases a renewal incentive. Everything else at Parker (staff, cleanliness, amenities) scores above portfolio average.',
+   elm:'<b>Elm-Ledbury</b> is the portfolio flagship: blended 86, NPS 52. Concierge team is the single biggest positive driver — 8 named mentions this month. Minor friction: package room congestion at peak hours. Consider staggered locker notifications.'
+  };
+  document.getElementById('aiBrief').innerHTML=briefs[id]||`<b>${list[0].name}</b>: blended sentiment ${list[0].blended}, churn risk ${list[0].riskPct}%. Primary theme to address: <b>${list[0].issue.toLowerCase()}</b>. Full topic breakdown and recommended actions in the scorecard below.`;
+}
+
+// init
+document.getElementById('buildingFilter').innerHTML='<option value="all">All Communities</option>'+BUILDINGS.map(b=>`<option value="${b.id}">${b.name}</option>`).join('');
+renderDrivers();applyFilter();
+</script>
+</body>
+</html>

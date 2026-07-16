@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fitzrovia · Operational Intelligence Layer — Concept Demos</title>
+<style>
+:root{--accent:#ff5a36;--text:#17130f;--muted:#7a736c;--line:#eee4df;--panel2:#fdf5f2}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#fff;color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.5}
+header{padding:56px 32px 40px;max-width:1200px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:16px;margin-bottom:28px}
+.mark{width:30px}
+.brand h1{font-size:19px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.brand p{font-size:11px;color:var(--accent);letter-spacing:.22em;text-transform:uppercase;margin-top:2px}
+.hero h2{font-size:34px;font-weight:700;line-height:1.2;max-width:720px;letter-spacing:-.01em}
+.hero h2 em{color:var(--accent);font-style:normal}
+.hero p{color:var(--muted);max-width:640px;margin-top:14px;font-size:16px}
+.tag{display:inline-block;font-size:11px;color:var(--muted);border:1px solid var(--line);padding:4px 12px;border-radius:20px;letter-spacing:.1em;margin-top:20px}
+main{max-width:1200px;margin:0 auto;padding:0 32px 60px}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.16em;color:var(--accent);margin:38px 0 16px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+a.card{display:block;border:1px solid var(--line);border-radius:12px;padding:20px;text-decoration:none;color:var(--text);background:#fff;transition:border-color .15s,transform .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+a.card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.card .n{font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.1em;margin-bottom:8px}
+.card b{display:block;font-size:15px;margin-bottom:6px}
+.card span{font-size:12.5px;color:var(--muted);line-height:1.45;display:block}
+.card .go{font-size:12px;color:var(--accent);font-weight:600;margin-top:12px;display:block}
+footer{border-top:1px solid var(--line);padding:24px 32px;text-align:center;color:var(--muted);font-size:11.5px;letter-spacing:.06em}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.hero h2{font-size:26px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 620 1000" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#FF5A36" stroke-width="58" style="width:100%;height:auto;display:block"><rect x="216" y="29" width="375" height="156"/><rect x="29" y="216" width="562" height="156"/><rect x="29" y="431" width="562" height="156"/><rect x="87" y="616" width="126" height="355"/></svg></div>
+    <div>
+      <h1>Fitzrovia</h1>
+      <p>Operational Intelligence Layer</p>
+    </div>
+  </div>
+  <div class="hero">
+    <h2>Six working tools that turn Fitzrovia's operating data into <em>renewals, design decisions, and NOI</em>.</h2>
+    <p>A concept demonstration built on synthetic data shaped around the real portfolio — Elm-Ledbury, Sloane, Parker, Waverley, Maddox, Loxley. Yardi stays the system of record; this layer adds what it can't do.</p>
+    <span class="tag">UNSOLICITED CONCEPT DEMO · SYNTHETIC DATA · NOT AFFILIATED WITH FITZROVIA REAL ESTATE</span>
+  </div>
+</header>
+<main>
+  <h3>Operational Demos</h3>
+  <div class="grid">
+    <a class="card" href="demos/1-resident-sentiment-intelligence.html"><span class="n">01</span><b>Resident Sentiment Intelligence</b><span>Google reviews, surveys & service tickets fused into one blended score per community — with the topics that drive satisfaction and churn.</span><span class="go">Open demo →</span></a>
+    <a class="card" href="demos/2-workorder-triage-predictive-maintenance.html"><span class="n">02</span><b>Work-Order Triage & Predictive Maintenance</b><span>Every request auto-prioritized with a visible rationale; repeat faults bundled; assets flagged before they fail.</span><span class="go">Open demo →</span></a>
+    <a class="card" href="demos/3-operations-command-center.html"><span class="n">03</span><b>Operations Command Center</b><span>Occupancy, renewals, NOI vs budget and staffing in one pane, with a daily AI brief.</span><span class="go">Open demo →</span></a>
+    <a class="card" href="demos/5-service-recovery-workbench.html"><span class="n">04</span><b>Service Recovery Workbench</b><span>At-risk residents, verified-failure guardrails, cost-vs-revenue on every recovery play. Retention as the cheapest revenue in the business.</span><span class="go">Open demo →</span></a>
+    <a class="card" href="demos/6-amenity-intelligence-roi.html"><span class="n">05</span><b>Amenity Intelligence & Design ROI</b><span>Cost per use, attributed rent premium, renewal lift — feeding amenity decisions for the development pipeline.</span><span class="go">Open demo →</span></a>
+    <a class="card" href="demos/7-sensor-mapping-floorplan.html"><span class="n">06</span><b>Sensor & Data-Source Map</b><span>How fob readers, WiFi APs, occupancy sensors and power submeters map to physical spaces — and how commissioning works.</span><span class="go">Open demo →</span></a>
+  </div>
+
+  <h3>Model Lab — the actual math, running in your browser</h3>
+  <div class="grid">
+    <a class="card" href="models/renewal-probability.html"><span class="n">LAB 01</span><b>Renewal Probability — Logistic Regression</b><span>A real model trained live in your browser on 4,000 synthetic leases. Inspect the learned weights, compose a hypothetical resident, watch the probability move.</span><span class="go">Open lab →</span></a>
+    <a class="card" href="models/hedonic-pricing.html"><span class="n">LAB 02</span><b>Amenity Premium — Hedonic Regression</b><span>Ordinary least squares fitted live on 3,000 synthetic units. Estimated vs true coefficients, and a unit composer that builds up implied rent.</span><span class="go">Open lab →</span></a>
+    <a class="card" href="models/llm-scoring.html"><span class="n">LAB 03</span><b>LLM Feedback Scoring</b><span>How free-text reviews and tickets become structured scores. Precomputed examples, the exact prompt contract, and an optional live mode.</span><span class="go">Open lab →</span></a>
+  </div>
+
+  <h3>Documents</h3>
+  <div class="grid">
+    <a class="card" href="demos/4-integration-architecture-onepager.html"><span class="n">DOC 01</span><b>Integration Architecture One-Pager</b><span>Yardi → sync → AI processing → delivery, with the 16-week phased plan and design principles. Print-ready.</span><span class="go">Open →</span></a>
+    <a class="card" href="docs/llm-scoring-methodology.md"><span class="n">DOC 02</span><b>LLM Scoring Methodology</b><span>The "math" behind the LLM layer: prompt contract, output schema, calibration, evaluation and drift monitoring.</span><span class="go">Open →</span></a>
+    <a class="card" href="docs/pitch.md"><span class="n">DOC 03</span><b>The Pitch</b><span>Four-minute spoken pitch with objection quick-reference.</span><span class="go">Open →</span></a>
+  </div>
+</main>
+<footer>All data synthetic · Built with AI-assisted development as a capability demonstration · David — mikaldtl@gmail.com</footer>
+</body>
+</html>

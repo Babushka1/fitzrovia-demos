@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fitzrovia · Work-Order Triage & Predictive Maintenance</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#ffffff; --panel:#ffffff; --panel2:#fdf5f2; --line:#eee4df;
+  --gold:#ff5a36; --text:#17130f; --muted:#7a736c;
+  --green:#148a46; --red:#c0182f; --amber:#a86a00; --blue:#135fc2;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:14px}
+header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);z-index:50}
+.brand{display:flex;align-items:center;gap:14px}
+.brand .mark{width:24px;display:flex;align-items:center}
+.brand h1{font-size:17px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.brand p{font-size:11px;color:var(--gold);letter-spacing:.22em;text-transform:uppercase;margin-top:2px}
+.demo-tag{font-size:10px;color:var(--muted);border:1px solid var(--line);padding:4px 10px;border-radius:20px;letter-spacing:.1em}
+main{padding:24px 32px;max-width:1500px;margin:0 auto}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--gold),transparent)}
+.kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px}
+.kpi .value{font-size:30px;font-family:inherit;font-weight:700}
+.kpi .delta{font-size:12px;margin-top:6px}
+.up{color:var(--green)}.down{color:var(--red)}.flat{color:var(--amber)}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:1.55fr 1fr}
+.card{background:var(--panel);border:1px solid var(--line);box-shadow:0 1px 3px rgba(0,0,0,.04);border-radius:12px;padding:20px;margin-bottom:14px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);margin-bottom:4px;font-weight:600}
+.card .sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:600}
+td{padding:10px;border-bottom:1px solid rgba(0,0,0,.05);vertical-align:top}
+tr.wo{cursor:pointer}
+tr.wo:hover td{background:rgba(255,90,54,.04)}
+tr.selected td{background:rgba(255,90,54,.08)!important}
+.pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.04em}
+.p1{background:rgba(192,24,47,.16);color:var(--red)}
+.p2{background:rgba(168,106,0,.14);color:var(--amber)}
+.p3{background:rgba(19,95,194,.13);color:var(--blue)}
+.p4{background:rgba(122,115,108,.15);color:var(--muted)}
+.sla-ok{color:var(--green);font-size:12px}
+.sla-warn{color:var(--amber);font-size:12px}
+.sla-breach{color:var(--red);font-size:12px;font-weight:700}
+.bsub{font-size:11px;color:var(--muted)}
+.detail{background:var(--panel2);border:1px solid rgba(255,90,54,.3);border-radius:12px;padding:18px;margin-bottom:14px;display:none}
+.detail.show{display:block}
+.detail h3{font-size:14px;margin-bottom:2px}
+.detail .meta{font-size:11px;color:var(--muted);margin-bottom:12px}
+.detail .sec{margin-bottom:12px}
+.detail .sec .t{font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);margin-bottom:5px;font-weight:700}
+.detail .sec .b{font-size:12.5px;line-height:1.5}
+.btn{display:inline-block;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--text);margin-right:8px}
+.btn.primary{background:var(--gold);color:#ffffff;border-color:var(--gold)}
+.btn:hover{opacity:.85}
+.asset{padding:14px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;background:var(--panel2)}
+.asset .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.asset .name{font-weight:600;font-size:13px}
+.asset .prob{font-family:inherit;font-weight:700;font-size:17px}
+.asset .why{font-size:12px;color:var(--muted);line-height:1.45}
+.asset .act{font-size:12px;color:var(--gold);margin-top:5px}
+.healthbar{height:5px;border-radius:3px;background:var(--line);margin-top:9px;overflow:hidden}
+.healthbar div{height:100%;border-radius:3px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--panel2);border:1px solid var(--gold);border-radius:10px;padding:14px 20px;font-size:13px;display:none;z-index:100;box-shadow:0 8px 30px rgba(0,0,0,.15)}
+canvas{max-height:230px}
+.ai-note{background:linear-gradient(135deg,rgba(255,90,54,.08),rgba(255,90,54,.02));border:1px solid rgba(255,90,54,.25);border-radius:12px;padding:16px 20px;margin-bottom:14px;font-size:13px;line-height:1.55}
+.ai-note b{color:var(--gold)}
+.ai-note .hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);font-weight:600}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tab{padding:7px 16px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--line);color:var(--muted)}
+.tab.active{background:rgba(255,90,54,.12);border-color:var(--gold);color:var(--gold);font-weight:600}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:20px;letter-spacing:.08em}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="mark"><svg viewBox="0 0 620 1000" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#FF5A36" stroke-width="58" style="width:100%;height:auto;display:block"><rect x="216" y="29" width="375" height="156"/><rect x="29" y="216" width="562" height="156"/><rect x="29" y="431" width="562" height="156"/><rect x="87" y="616" width="126" height="355"/></svg></div>
+    <div>
+      <h1>Fitzrovia</h1>
+      <p>Work-Order Triage · Predictive Maintenance</p>
+    </div>
+  </div>
+  <span class="demo-tag">DEMO · SYNTHETIC DATA</span>
+</header>
+<main>
+  <div class="ai-note">
+    <div class="hdr">✦ AI Morning Triage — 42 new items processed overnight</div>
+    All 42 incoming requests were auto-categorized, prioritized, and matched to technicians in <b>1.8s avg</b>. Three items flagged for human review: a possible <b>water-ingress pattern at Marlow</b> (4 related tickets, floors 8–10 stack — plumbing riser suspected, bundled into WO-8841), and two ambiguous descriptions routed to the queue with clarifying questions auto-sent to residents. Predictive watch: <b>Elevator #2 at Parker</b> failure probability crossed 70% — parts lead time is 3 weeks, recommend ordering today.
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="label">Open Work Orders</div><div class="value">147</div><div class="delta up">−18% vs last month</div></div>
+    <div class="kpi"><div class="label">Auto-Triaged Today</div><div class="value">42<span style="font-size:15px;color:var(--muted)">/42</span></div><div class="delta up">100% · 3 flagged for review</div></div>
+    <div class="kpi"><div class="label">Median Time to Resolve</div><div class="value">2.1<span style="font-size:15px;color:var(--muted)"> days</span></div><div class="delta up">was 3.4 before AI triage</div></div>
+    <div class="kpi"><div class="label">SLA Compliance</div><div class="value">94%</div><div class="delta flat">4 at-risk today</div></div>
+    <div class="kpi"><div class="label">Predicted Failures Averted</div><div class="value">11</div><div class="delta up">~$78k est. avoided cost YTD</div></div>
+  </div>
+
+  <div class="grid g2">
+    <div>
+      <div class="card">
+        <h2>Triage Queue</h2>
+        <div class="sub">AI-scored priority · click a row for the full triage rationale</div>
+        <div class="tabs" id="tabs">
+          <div class="tab active" data-f="all" onclick="setTab(this)">All (12)</div>
+          <div class="tab" data-f="p1" onclick="setTab(this)">Urgent (3)</div>
+          <div class="tab" data-f="review" onclick="setTab(this)">Needs Review (3)</div>
+        </div>
+        <div class="detail" id="detail"></div>
+        <table>
+          <thead><tr><th>WO</th><th>Community · Unit</th><th>Request</th><th>Priority</th><th>Assigned</th><th>SLA</th></tr></thead>
+          <tbody id="queue"></tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h2>Volume by Category — 6 Months</h2>
+        <div class="sub">Stacked monthly work orders · portfolio-wide</div>
+        <canvas id="volChart"></canvas>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <h2>Predictive Maintenance Watchlist</h2>
+        <div class="sub">Asset failure risk from ticket history, age, sensor & vendor data</div>
+        <div id="assets"></div>
+      </div>
+      <div class="card">
+        <h2>Resolution Time Trend</h2>
+        <div class="sub">Median days to resolve · before vs after AI triage (Jan)</div>
+        <canvas id="mttrChart"></canvas>
+      </div>
+    </div>
+  </div>
+</main>
+<footer>Prepared as a concept demonstration for Fitzrovia · All work-order data is synthetic · Built with AI-assisted development</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+const WOS=[
+ {id:'WO-8847',b:'Parker · Unit 2214',req:'No heat in unit — resident reports 16°C overnight',cat:'HVAC',p:'p1',pl:'P1 · Urgent',tech:'M. Okafor (HVAC)',sla:'4h · 2h 10m left',slac:'sla-warn',review:false,
+  rationale:'Habitability issue (heat) + vulnerable-hours report + temperature below city bylaw minimum (21°C). Keywords matched: "no heat", "overnight". Resident is on churn watchlist — resolution speed affects renewal.',
+  plan:'Dispatch M. Okafor (on-site at Parker until 3pm, HVAC certified, 4.9 rating on similar jobs). Fan-coil unit in this stack serviced 2× in 90 days — if third fault, escalate to riser inspection (see PM watchlist).',
+  parts:'Likely: thermostat or FCU valve. Both in Parker storage (verified stock: 3 valves, 2 stats).'},
+ {id:'WO-8846',b:'Elm-Ledbury · Amenity',req:'Pool pump making grinding noise, water slightly cloudy',cat:'Amenity / Mechanical',p:'p1',pl:'P1 · Urgent',tech:'Vendor: AquaTech (PO auto-drafted)',sla:'8h · 6h 40m left',slac:'sla-ok',review:false,
+  rationale:'Amenity closure risk + health-code implication (water clarity). Pool is #2 satisfaction driver at Elm-Ledbury — closure would be high-visibility. Auto-drafted vendor PO pending PM approval.',
+  plan:'AquaTech under contract, 4h response SLA. Close pool preemptively? AI suggests yes — draft resident notice attached.',
+  parts:'Impeller bearing suspected (pump is 4.2 yrs old, same failure at Sloane pump 2024).'},
+ {id:'WO-8845',b:'Maddox Tyndall · P2 Garage',req:'Garage door stuck open again, 6th report this week',cat:'Building Systems',p:'p1',pl:'P1 · Urgent',tech:'Vendor: GateWorks',sla:'6h · BREACH RISK',slac:'sla-breach',review:false,
+  rationale:'Security exposure (door open) + repeat fault (6× in 7 days) + correlates with predictive watchlist asset (motor drawing 2.3× rated current). Recommend full motor replacement, not another reset.',
+  plan:'Stop repair-loop: 6 resets in 7 days cost ~$2,100 in callouts. Replacement motor ~$4,800 installed, ends the cycle. Bundle with WO-8829, WO-8834 (same asset).',
+  parts:'Motor: 5-day lead from GateWorks. Interim: assign overnight patrol pass-by (auto-request drafted).'},
+ {id:'WO-8844',b:'Marlow · Unit 1008',req:'Water stain spreading on bathroom ceiling',cat:'Plumbing',p:'p2',pl:'P2 · High',tech:'J. Silva (Plumbing)',sla:'24h · 19h left',slac:'sla-ok',review:true,
+  rationale:'FLAGGED: 4th water-related ticket in the 08 stack (floors 8–10) in 12 days. Pattern suggests riser leak, not isolated unit issues. Bundled as WO-8841 parent. Human review requested before opening walls.',
+  plan:'Inspect riser access on floor 10 first (least invasive). If confirmed, scope full riser repair — AI drafted vendor RFQ to 3 plumbing contractors.',
+  parts:'TBD pending inspection.'},
+ {id:'WO-8843',b:'Sloane · Unit 715',req:'Dishwasher not draining',cat:'Appliance',p:'p3',pl:'P3 · Standard',tech:'R. Chen (General)',sla:'72h · 68h left',slac:'sla-ok',review:false,
+  rationale:'Standard appliance fault, no habitability impact. Resident selected preferred window (Thu AM) via chatbot. Same model had drain-pump recall — serial checked: not affected.',
+  plan:'Thu 9–11am visit confirmed with resident automatically.',
+  parts:'Drain pump in central stock if needed.'},
+ {id:'WO-8842',b:'Waverley · Unit 507',req:'Billing dispute — charged for wall repair after move-out notice',cat:'Admin (rerouted)',p:'p4',pl:'Rerouted',tech:'→ Resident Services',sla:'—',slac:'sla-ok',review:true,
+  rationale:'FLAGGED: Not a maintenance issue — AI rerouted to Resident Services and linked to the open billing dispute for this unit (also on churn watchlist). Prevents a wasted tech dispatch.',
+  plan:'Resident Services to respond with clarified statement; template drafted.',parts:'—'},
+ {id:'WO-8841',b:'Marlow · Floors 8–10',req:'PARENT: Suspected riser leak — 4 bundled tickets',cat:'Plumbing',p:'p2',pl:'P2 · High',tech:'J. Silva + vendor RFQ',sla:'24h · 19h left',slac:'sla-ok',review:true,
+  rationale:'FLAGGED: AI-created parent work order bundling WO-8844, WO-8838, WO-8831, WO-8827. Estimated single-repair saving vs 4 separate callouts: ~$3,400. Awaiting PM approval to proceed as bundle.',
+  plan:'Riser inspection → scope → single vendor engagement. All 4 residents notified with one coordinated message (draft ready).',parts:'TBD.'},
+ {id:'WO-8840',b:'Maddox Cabbagetown · Laundry',req:'Washer #3 error code E11, out of service',cat:'Appliance',p:'p2',pl:'P2 · High',tech:'Vendor: Coinamatic',sla:'48h · SLA BREACHED',slac:'sla-breach',review:false,
+  rationale:'Vendor SLA breached (48h passed). 4 of 8 machines now down at this community — laundry downtime is the #1 negative sentiment topic at Cabbagetown. Auto-escalated to vendor account manager + PM.',
+  plan:'Escalation email sent. If no vendor ETA by 2pm, AI recommends invoking contract penalty clause §4.2.',parts:'Vendor-supplied.'},
+ {id:'WO-8839',b:'Loxley Mille Carré · Unit 1204',req:'Fenêtre ne ferme pas complètement (window won\'t fully close)',cat:'Building Envelope',p:'p2',pl:'P2 · High',tech:'A. Tremblay',sla:'24h · 21h left',slac:'sla-ok',review:false,
+  rationale:'Auto-translated from French, categorized, and replied to resident in French. Winter-proofing priority boost applied (envelope issues weighted higher Oct–Apr... currently July, standard weight).',
+  plan:'Standard latch adjustment visit booked.',parts:'Latch kit in stock.'},
+ {id:'WO-8838',b:'Elm-Ledbury · Unit 3105',req:'Smart lock battery low warning',cat:'Access / IoT',p:'p3',pl:'P3 · Standard',tech:'Concierge task',sla:'72h · 70h left',slac:'sla-ok',review:false,
+  rationale:'IoT alert auto-generated (not resident-reported). Batched with 11 other low-battery locks into one concierge round — single 40-min task instead of 12 tickets.',
+  plan:'Battery round scheduled tomorrow 10am.',parts:'CR123A stock: 64 units.'},
+ {id:'WO-8837',b:'Parker · Elevator Lobby L15',req:'Scuffed wall panels and loose handrail',cat:'Cosmetic / Carpentry',p:'p4',pl:'P4 · Scheduled',tech:'Next carpentry block (Jul 14)',sla:'7d',slac:'sla-ok',review:false,
+  rationale:'Cosmetic, batched into weekly carpentry block. Note: located in elevator lobby at Parker — AI suggests completing before elevator-modernization resident comms to avoid compounding perception issues.',
+  plan:'Jul 14 carpentry block, 45 min allocation.',parts:'Panel stock verified.'},
+ {id:'WO-8836',b:'Sloane · Amenity',req:'Treadmill #2 belt slipping',cat:'Amenity / Fitness',p:'p3',pl:'P3 · Standard',tech:'Vendor: FitServ',sla:'72h · 60h left',slac:'sla-ok',review:false,
+  rationale:'Gym equipment wait time is the top minor-issue topic at Sloane — expedite within P3 band. Preventive belt service for treadmills #1 and #3 added to same visit (last serviced 11 months ago).',
+  plan:'FitServ visit Wed. 3 machines serviced in one callout.',parts:'Vendor-supplied.'}
+];
+const ASSETS=[
+ {name:'Elevator #2 · Parker',prob:72,c:'var(--red)',why:'Vibration signature drift + 9 entrapment/fault calls in 90 days + 22-yr-old traction machine. Parts lead time 3 weeks.',act:'Order parts today; schedule modernization consult. Est. failure cost if unplanned: $46k + resident impact.'},
+ {name:'Garage Door Motor · Maddox Tyndall P2',prob:68,c:'var(--red)',why:'Drawing 2.3× rated current; 6 faults this week. Reset-loop cost ~$2.1k already.',act:'Replace motor ($4.8k installed). Bundled with WO-8845.'},
+ {name:'Pool Pump · Elm-Ledbury',prob:54,c:'var(--amber)',why:'Bearing noise + 4.2 yrs age; identical unit failed at Sloane at 4.4 yrs.',act:'Replace impeller bearing during WO-8846 visit (+$600 now vs $5k emergency swap).'},
+ {name:'Boiler #1 · Maddox Cabbagetown',prob:41,c:'var(--amber)',why:'Efficiency down 8% YoY; pressure-relief cycling more often. 14 yrs old.',act:'Book combustion tune-up before heating season; get replacement quote for 2027 capex plan.'},
+ {name:'Make-up Air Unit · Waverley',prob:33,c:'var(--amber)',why:'Filter ΔP rising faster than schedule predicts — possible coil fouling.',act:'Advance filter change 3 weeks; inspect coil during visit.'},
+ {name:'Domestic Water Riser · Marlow (08 stack)',prob:61,c:'var(--red)',why:'4 water-ingress tickets, floors 8–10, 12 days. Pattern match: riser joint failure (89% confidence).',act:'Inspection scheduled via WO-8841. Early catch est. saving: $30k+ vs ceiling collapse scenario.'}
+];
+
+let filter='all',selected=null;
+function setTab(el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');filter=el.dataset.f;selected=null;document.getElementById('detail').classList.remove('show');renderQueue();}
+function renderQueue(){
+  const list=WOS.filter(w=>filter==='all'||(filter==='p1'&&w.p==='p1')||(filter==='review'&&w.review));
+  document.getElementById('queue').innerHTML=list.map(w=>
+   `<tr class="wo ${selected===w.id?'selected':''}" onclick="showDetail('${w.id}')">
+     <td style="font-weight:600">${w.id}${w.review?' <span style="color:var(--gold)">⚑</span>':''}</td>
+     <td>${w.b}</td>
+     <td>${w.req}<div class="bsub">${w.cat}</div></td>
+     <td><span class="pill ${w.p}">${w.pl}</span></td>
+     <td class="bsub" style="font-size:12px">${w.tech}</td>
+     <td class="${w.slac}">${w.sla}</td></tr>`).join('');
+}
+function showDetail(id){
+  selected=id;renderQueue();
+  const w=WOS.find(x=>x.id===id);
+  const d=document.getElementById('detail');
+  d.innerHTML=`<h3>${w.id} — ${w.req}</h3><div class="meta">${w.b} · ${w.cat} · <span class="pill ${w.p}">${w.pl}</span></div>
+   <div class="sec"><div class="t">Why AI prioritized it this way</div><div class="b">${w.rationale}</div></div>
+   <div class="sec"><div class="t">Recommended plan</div><div class="b">${w.plan}</div></div>
+   <div class="sec"><div class="t">Parts & logistics</div><div class="b">${w.parts}</div></div>
+   <div><span class="btn primary" onclick="toast('${w.id} approved — dispatch confirmed & resident notified automatically')">Approve & Dispatch</span>
+   <span class="btn" onclick="toast('Reassignment options generated for ${w.id}')">Reassign</span>
+   <span class="btn" onclick="toast('Priority override logged for ${w.id} — model will learn from this correction')">Override Priority</span></div>`;
+  d.classList.add('show');d.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function toast(msg){const t=document.getElementById('toast');t.textContent='✓ '+msg;t.style.display='block';setTimeout(()=>t.style.display='none',3200);}
+function renderAssets(){
+  document.getElementById('assets').innerHTML=ASSETS.sort((a,b)=>b.prob-a.prob).map(a=>
+   `<div class="asset"><div class="top"><span class="name">${a.name}</span><span class="prob" style="color:${a.c}">${a.prob}%<span style="font-size:10px;color:var(--muted)"> 90-day risk</span></span></div>
+    <div class="why">${a.why}</div><div class="act">→ ${a.act}</div>
+    <div class="healthbar"><div style="width:${a.prob}%;background:${a.c}"></div></div></div>`).join('');
+}
+renderQueue();renderAssets();
+
+const gridC='rgba(0,0,0,.06)',tickC='#7a736c';
+new Chart(document.getElementById('volChart'),{type:'bar',
+ data:{labels:['Feb','Mar','Apr','May','Jun','Jul'],datasets:[
+  {label:'Plumbing',data:[64,58,61,55,52,49],backgroundColor:'#135fc2'},
+  {label:'HVAC',data:[52,44,38,42,58,63],backgroundColor:'#ff5a36'},
+  {label:'Appliance',data:[47,45,48,44,43,41],backgroundColor:'#148a46'},
+  {label:'Building Systems',data:[38,36,31,29,27,24],backgroundColor:'#c0182f'},
+  {label:'Other',data:[41,39,37,35,33,31],backgroundColor:'#b8b1aa'}]},
+ options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tickC,boxWidth:12,font:{size:11}}}},
+  scales:{x:{stacked:true,ticks:{color:tickC},grid:{color:gridC}},y:{stacked:true,ticks:{color:tickC},grid:{color:gridC}}}}});
+new Chart(document.getElementById('mttrChart'),{type:'line',
+ data:{labels:['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul'],datasets:[
+  {label:'Median days to resolve',data:[3.6,3.4,3.5,3.3,3.4,3.1,2.8,2.6,2.4,2.3,2.2,2.1],borderColor:'#ff5a36',backgroundColor:'rgba(255,90,54,.08)',fill:true,tension:.35,borderWidth:2.5,pointRadius:0}]},
+ options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},annotation:{}},
+  scales:{x:{ticks:{color:tickC},grid:{color:gridC}},y:{min:0,max:4,ticks:{color:tickC},grid:{color:gridC}}}}});
+</script>
+</body>
+</html>

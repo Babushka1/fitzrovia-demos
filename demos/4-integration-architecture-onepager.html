@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Fitzrovia · AI Operations Layer — Integration Architecture</title>
+<style>
+:root{--ink:#131722;--muted:#5b6472;--gold:#ff5a36;--line:#e9e0db;--panel:#faf6f4;--navy:#241d1a;--green:#15803d;--red:#b91c1c}
+*{margin:0;padding:0;box-sizing:border-box}
+@page{size:letter;margin:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;color:var(--ink);background:#e8eaef;font-size:11.5px;line-height:1.4}
+.page{width:8.5in;min-height:11in;margin:20px auto;background:#fff;padding:.55in .6in;box-shadow:0 4px 30px rgba(0,0,0,.15)}
+@media print{body{background:#fff}.page{margin:0;box-shadow:none}}
+header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2.5px solid var(--navy);padding-bottom:12px;margin-bottom:16px}
+.mark{width:22px;display:inline-flex;align-items:center;margin-right:12px;vertical-align:middle}
+h1{font-size:19px;display:inline-block;vertical-align:middle}
+.sub{color:var(--gold);font-size:10px;letter-spacing:.2em;text-transform:uppercase;margin-top:3px}
+.meta{text-align:right;font-size:10px;color:var(--muted);line-height:1.5}
+h2{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--gold);margin:14px 0 8px;font-weight:700}
+.principle{font-size:11px;color:var(--muted);font-style:italic;margin-bottom:14px}
+.flow{display:flex;gap:8px;align-items:stretch}
+.col{flex:1;display:flex;flex-direction:column;gap:6px}
+.node{border:1px solid var(--line);border-radius:6px;padding:7px 9px;background:var(--panel)}
+.node b{display:block;font-size:10.5px;margin-bottom:2px}
+.node span{font-size:9.5px;color:var(--muted);line-height:1.35;display:block}
+.node.hl{border-color:var(--gold);background:#fff1ec}
+.colhead{font-size:9px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);text-align:center;font-weight:700;padding-bottom:2px}
+.arrow{display:flex;align-items:center;color:var(--gold);font-size:16px;font-weight:700}
+.writeback{margin-top:8px;border:1px dashed var(--gold);border-radius:6px;padding:6px 10px;font-size:10px;color:var(--muted);background:#fff8f5}
+.writeback b{color:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:10.5px;margin-top:2px}
+th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);border-bottom:1.5px solid var(--navy);padding:5px 8px}
+td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{font-weight:700;white-space:nowrap}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+ul{list-style:none}
+li{padding:3.5px 0 3.5px 14px;position:relative;font-size:10.5px;line-height:1.4}
+li::before{content:'—';position:absolute;left:0;color:var(--gold);font-weight:700}
+footer{margin-top:14px;padding-top:8px;border-top:1px solid var(--line);font-size:9px;color:var(--muted);display:flex;justify-content:space-between}
+.kpi-strip{display:flex;gap:10px;margin-top:6px}
+.kpi{flex:1;border:1px solid var(--line);border-radius:6px;padding:7px 10px;text-align:center}
+.kpi .v{font-family:inherit;font-weight:700;font-size:15px;color:var(--ink)}
+.kpi .l{font-size:8.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:2px}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div>
+      <span class="mark"><svg viewBox="0 0 620 1000" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#FF5A36" stroke-width="58" style="width:100%;height:auto;display:block"><rect x="216" y="29" width="375" height="156"/><rect x="29" y="216" width="562" height="156"/><rect x="29" y="431" width="562" height="156"/><rect x="87" y="616" width="126" height="355"/></svg></span><h1>AI Operations Layer — Integration Architecture</h1>
+      <div class="sub">Prepared for Fitzrovia · Concept Proposal</div>
+    </div>
+    <div class="meta">David · July 2026<br>Yardi remains system of record<br>Read-mostly · Narrow write-back · Human-approved actions</div>
+  </header>
+
+  <h2>Architecture — a layer on top of Yardi, not a replacement</h2>
+  <div class="flow">
+    <div class="col">
+      <div class="colhead">1 · Data Sources</div>
+      <div class="node"><b>Yardi Voyager / RentCafe</b><span>Leases, units, rent roll, work orders, renewals, resident records, surveys (REST/SOAP APIs)</span></div>
+      <div class="node"><b>Google Business Profile API</b><span>Reviews & ratings per community</span></div>
+      <div class="node"><b>Survey platform</b><span>Pulse / move-in / move-out exports</span></div>
+      <div class="node"><b>Optional: BAS / IoT</b><span>Elevator, HVAC, smart-lock telemetry</span></div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="col">
+      <div class="colhead">2 · Sync & Store</div>
+      <div class="node"><b>Sync jobs</b><span>Hourly incremental pulls + webhooks where available; nightly full reconcile</span></div>
+      <div class="node"><b>Postgres warehouse</b><span>Unified schema: resident · unit · community · event timeline. Hosted in Canada (PIPEDA / Law 25)</span></div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="col">
+      <div class="colhead">3 · AI Processing</div>
+      <div class="node hl"><b>Sentiment & topic engine</b><span>LLM scoring of reviews, surveys, ticket text; topics linked to churn</span></div>
+      <div class="node hl"><b>Work-order triage</b><span>Priority, category, bundling, tech match, SLA risk</span></div>
+      <div class="node hl"><b>Churn & recovery scoring</b><span>Per-resident risk + recommended recovery play</span></div>
+      <div class="node hl"><b>Predictive maintenance</b><span>Asset failure risk from ticket history + telemetry</span></div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="col">
+      <div class="colhead">4 · Delivery</div>
+      <div class="node"><b>Dashboards</b><span>Sentiment Intelligence · Triage · Command Center · Service Recovery (SSO-gated web)</span></div>
+      <div class="node"><b>Daily AI brief</b><span>Email / Teams — no new login required for PMs</span></div>
+      <div class="node"><b>Alerts</b><span>SLA breach, churn spike, asset risk threshold</span></div>
+    </div>
+  </div>
+  <div class="writeback"><b>↩ Write-back (narrow & audited):</b> approved triage decisions update Yardi work orders (priority, assignee, notes); recovery plays log to resident record. Nothing changes for techs or vendors downstream — they keep working in Yardi.</div>
+
+  <h2>Delivery Plan</h2>
+  <table>
+    <tr><th style="width:1.1in">Phase</th><th style="width:1.2in">Timeline</th><th>Scope</th><th style="width:1.9in">Exit criteria</th></tr>
+    <tr><td>0 · CSV Pilot</td><td>Weeks 1–2</td><td>Dashboards run on exported Yardi CSVs + live Google reviews. Zero IT lift, no credentials.</td><td>PMs at one community confirm outputs match reality</td></tr>
+    <tr><td>1 · Read-only sync</td><td>Weeks 3–6</td><td>API sync for one community (suggest Parker — clearest ROI story). Daily brief goes live.</td><td>Triage accuracy ≥ 90% vs PM judgment</td></tr>
+    <tr><td>2 · Write-back</td><td>Weeks 7–10</td><td>Approve/dispatch writes to Yardi; service-recovery workflow live with guardrails.</td><td>Median time-to-resolve ↓; first tracked saves</td></tr>
+    <tr><td>3 · Portfolio</td><td>Weeks 11–16</td><td>All active communities; exec command center; predictive maintenance with vendor lead-time data.</td><td>Renewal-rate and NOI impact measurable</td></tr>
+  </table>
+
+  <div class="two">
+    <div>
+      <h2>Design Principles</h2>
+      <ul>
+        <li><b>Yardi stays the system of record.</b> This layer adds what Voyager doesn't: cross-source sentiment fusion, resident-level recovery, bespoke portfolio views.</li>
+        <li><b>Human in the loop.</b> Every AI action (dispatch, concession, outreach) requires PM approval; overrides train the model.</li>
+        <li><b>Privacy by design.</b> Canadian data residency; review-to-resident matches marked "probable" until human-confirmed; PIPEDA & Quebec Law 25 compliant.</li>
+        <li><b>Service recovery, not special treatment.</b> Interventions trigger on verified service failures (SLA breach, repeat fault) — never on complaint volume alone.</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Why This Creates Value</h2>
+      <ul>
+        <li><b>Renewals:</b> each recovered point of renewal at a 316-unit community ≈ $41k/yr (turn cost + vacancy + spread).</li>
+        <li><b>Maintenance:</b> triage automation cut median resolve time 3.4 → 2.1 days in modeled scenario; early asset intervention avoids 5-figure emergency repairs.</li>
+        <li><b>Reputation:</b> Google rating is the top organic leasing channel; systematic review response + recovery lifts it measurably.</li>
+        <li><b>Brand:</b> operationalizes the Fitzrovia Standard — service quality becomes measured, not anecdotal.</li>
+      </ul>
+      <div class="kpi-strip">
+        <div class="kpi"><div class="v">2 wks</div><div class="l">To first pilot</div></div>
+        <div class="kpi"><div class="v">$0</div><div class="l">Yardi config changes</div></div>
+        <div class="kpi"><div class="v">16 wks</div><div class="l">To portfolio rollout</div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Concept demonstration · All figures illustrative pending real data</span>
+    <span>David · mikaldtl@gmail.com</span>
+  </footer>
+</div>
+</body>
+</html>
