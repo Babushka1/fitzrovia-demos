@@ -14,8 +14,7 @@ Six working dashboard demos, three interactive model labs, and supporting docs, 
 ├── api/
 │   └── score.js                ← Vercel serverless proxy for live LLM scoring
 ├── docs/
-│   ├── llm-scoring-methodology.md
-│   └── pitch.md
+│   └── llm-scoring-methodology.md
 └── README.md
 ```
 
